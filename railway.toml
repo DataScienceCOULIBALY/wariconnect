@@ -1,0 +1,11 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "gunicorn wariconnect.wsgi --bind 0.0.0.0:$PORT"
+healthcheckPath = "/"
+restartPolicyType = "ON_FAILURE"
+
+[[deploy.envVars]]
+name = "DJANGO_SETTINGS_MODULE"
+value = "wariconnect.settings"
