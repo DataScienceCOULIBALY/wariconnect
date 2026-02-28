@@ -4,9 +4,9 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'change-moi-en-production')
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -49,7 +49,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'wariconnect.wsgi.application'
 
-# ─── BASE DE DONNÉES SUPABASE (PostgreSQL) ───────────────────────────────────
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -73,7 +72,6 @@ TIME_ZONE = 'Africa/Ouagadougou'
 USE_I18N = True
 USE_TZ = True
 
-# ─── FICHIERS STATIQUES & MÉDIAS ─────────────────────────────────────────────
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
@@ -83,9 +81,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ─── WHATSAPP ─────────────────────────────────────────────────────────────────
 WHATSAPP_NUMBER = os.environ.get('WHATSAPP_NUMBER', '22670000000')
 
-# ─── LOGIN ────────────────────────────────────────────────────────────────────
 LOGIN_URL = '/connexion/'
 LOGIN_REDIRECT_URL = '/'
+CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
