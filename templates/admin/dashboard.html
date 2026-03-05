@@ -91,6 +91,10 @@
       <div class="stat-val">{{ total - actifs }}</div>
       <div class="stat-label">Masqués</div>
     </div>
+    <div class="stat">
+      <div class="stat-val">{{ total_vues }}</div>
+      <div class="stat-label">Total vues</div>
+    </div>
   </div>
 
   <div class="toolbar">
@@ -108,6 +112,7 @@
           <th>Ville</th>
           <th>Prix</th>
           <th>Ordre</th>
+          <th>Vues</th>
           <th>Visible</th>
           <th>Actions</th>
         </tr>
@@ -120,6 +125,7 @@
           <td>{{ p.ville }}{% if p.quartier %}, {{ p.quartier }}{% endif %}</td>
           <td class="prix">{{ p.prix_formate() }}</td>
           <td>{{ p.ordre }}</td>
+          <td style="color:rgba(255,255,255,.4);">👁️ {{ p.vues or 0 }}</td>
           <td>
             <button class="toggle-btn {{ 'on' if p.actif else 'off' }}"
                     onclick="toggleProduit({{ p.id }}, this)"
