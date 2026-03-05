@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ titre }} — WariConnect Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:#0a0a0a;color:#F5EFE6;min-height:100vh;}
+  .sidebar{position:fixed;top:0;left:0;width:220px;height:100vh;background:#111;border-right:1px solid rgba(232,160,32,.12);padding:24px 16px;display:flex;flex-direction:column;gap:6px;}
+  .sidebar-logo{font-family:'Playfair Display',serif;font-size:1.2rem;color:#E8A020;padding:8px 12px;margin-bottom:16px;}
+  .sidebar a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:rgba(255,255,255,.5);text-decoration:none;font-size:.88rem;transition:all .2s;}
+  .sidebar a:hover,.sidebar a.active{background:rgba(232,160,32,.1);color:#E8A020;}
+  .sidebar-bottom{margin-top:auto;}
+  .main{margin-left:220px;padding:32px;max-width:760px;}
+  .page-title{font-family:'Playfair Display',serif;font-size:1.8rem;margin-bottom:4px;}
+  .page-sub{color:rgba(255,255,255,.35);font-size:.85rem;margin-bottom:28px;}
+  .card{background:#161616;border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:28px;}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .field{margin-bottom:18px;}
+  .field.full{grid-column:1/-1;}
+  .field label{display:block;font-size:.78rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;}
+  .field input,.field select,.field textarea{width:100%;padding:12px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.93rem;outline:none;transition:border-color .2s;}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:#E8A020;}
+  .field select option{background:#1a1a1a;}
+  .field textarea{resize:vertical;min-height:90px;}
+  .field input::placeholder,.field textarea::placeholder{color:rgba(255,255,255,.2);}
+  /* Toggle switch */
+  .switch-row{display:flex;align-items:center;gap:12px;}
+  .switch{position:relative;width:44px;height:24px;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;inset:0;background:rgba(255,255,255,.1);border-radius:12px;cursor:pointer;transition:.2s;}
+  .slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+  input:checked+.slider{background:#25D366;}
+  input:checked+.slider:before{left:23px;}
+  .switch-label{font-size:.88rem;color:rgba(255,255,255,.6);}
+  /* Aperçu photo */
+  .photo-preview{width:80px;height:80px;border-radius:12px;object-fit:cover;border:1px solid rgba(232,160,32,.2);margin-top:8px;display:none;}
+  /* Boutons */
+  .btn-row{display:flex;gap:12px;margin-top:8px;}
+  .btn-save{padding:13px 28px;background:#E8A020;border:none;border-radius:10px;color:#0D0D0D;font-weight:600;font-size:.95rem;cursor:pointer;transition:all .2s;}
+  .btn-save:hover{background:#f5b835;transform:translateY(-1px);}
+  .btn-cancel{padding:13px 20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:rgba(255,255,255,.5);font-size:.95rem;text-decoration:none;transition:all .2s;}
+  .btn-cancel:hover{background:rgba(255,255,255,.08);}
+  .hint{font-size:.75rem;color:rgba(255,255,255,.25);margin-top:5px;}
+  @media(max-width:768px){.sidebar{display:none;}.main{margin-left:0;padding:20px;}.row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo">⚡ WariConnect</div>
+  <a href="/admin">📊 Dashboard</a>
+  <a href="/admin/produit/nouveau" class="active">➕ Nouveau produit</a>
+  <a href="/" target="_blank">🌐 Voir le site</a>
+  <div class="sidebar-bottom">
+    <a href="/admin/logout">🚪 Déconnexion</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="page-title">{{ titre }}</div>
+  <div class="page-sub">Remplis les informations du profil ou groupe</div>
+
+  <div class="card">
+    <form method="post">
+      <div class="row">
+
+        <!-- Type -->
+        <div class="field">
+          <label>Type</label>
+          <select name="type" id="typeSelect">
+            <option value="personne"  {% if produit and produit.type == 'personne'  %}selected{% endif %}>👤 Personne</option>
+            <option value="whatsapp"  {% if produit and produit.type == 'whatsapp'  %}selected{% endif %}>💬 Groupe WhatsApp</option>
+            <option value="telegram"  {% if produit and produit.type == 'telegram'  %}selected{% endif %}>✈️ Groupe Telegram</option>
+          </select>
+        </div>
+
+        <!-- Prix -->
+        <div class="field">
+          <label>Prix (FCFA)</label>
+          <input type="number" name="prix" placeholder="ex: 2000" min="0"
+                 value="{{ produit.prix if produit else '' }}" required>
+        </div>
+
+        <!-- Nom -->
+        <div class="field full">
+          <label>Nom / Titre</label>
+          <input type="text" name="nom" placeholder="ex: Groupe Rencontres Ouaga, Sophie M., Canal Trading..."
+                 value="{{ produit.nom if produit else '' }}" required>
+        </div>
+
+        <!-- Photo URL -->
+        <div class="field full">
+          <label>Photo (URL de l'image)</label>
+          <input type="url" name="photo" id="photoUrl" placeholder="https://exemple.com/photo.jpg"
+                 value="{{ produit.photo if produit and produit.photo else '' }}"
+                 oninput="previewPhoto(this.value)">
+          <div class="hint">Colle le lien direct d'une image (imgur, cloudinary, etc.)</div>
+          <img id="photoPreview" class="photo-preview"
+               src="{{ produit.photo if produit and produit.photo else '' }}"
+               alt="Aperçu">
+        </div>
+
+        <!-- Ville -->
+        <div class="field">
+          <label>Ville</label>
+          <input type="text" name="ville" placeholder="ex: Ouagadougou"
+                 value="{{ produit.ville if produit else '' }}" required>
+        </div>
+
+        <!-- Quartier -->
+        <div class="field">
+          <label>Quartier <span style="color:rgba(255,255,255,.25)">(optionnel)</span></label>
+          <input type="text" name="quartier" placeholder="ex: Ouaga 2000"
+                 value="{{ produit.quartier if produit and produit.quartier else '' }}">
+        </div>
+
+        <!-- Description -->
+        <div class="field full">
+          <label>Description <span style="color:rgba(255,255,255,.25)">(optionnel)</span></label>
+          <textarea name="description" placeholder="Décris ce profil ou groupe...">{{ produit.description if produit and produit.description else '' }}</textarea>
+        </div>
+
+        <!-- Ordre -->
+        <div class="field">
+          <label>Ordre d'affichage</label>
+          <input type="number" name="ordre" placeholder="0" min="0"
+                 value="{{ produit.ordre if produit else 0 }}">
+          <div class="hint">0 = en premier, 1 = deuxième, etc.</div>
+        </div>
+
+        <!-- Visible -->
+        <div class="field" style="display:flex;flex-direction:column;justify-content:center;">
+          <label>Visible sur le site</label>
+          <div class="switch-row" style="margin-top:10px;">
+            <label class="switch">
+              <input type="checkbox" name="actif" id="actifCheck"
+                     {% if not produit or produit.actif %}checked{% endif %}>
+              <span class="slider"></span>
+            </label>
+            <span class="switch-label" id="actifLabel">Visible</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="btn-row">
+        <button type="submit" class="btn-save">💾 Enregistrer</button>
+        <a href="/admin" class="btn-cancel">Annuler</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function previewPhoto(url) {
+  const img = document.getElementById('photoPreview');
+  if (url) {
+    img.src = url;
+    img.style.display = 'block';
+  } else {
+    img.style.display = 'none';
+  }
+}
+
+// Afficher aperçu si photo existante
+window.onload = () => {
+  const url = document.getElementById('photoUrl').value;
+  if (url) previewPhoto(url);
+
+  document.getElementById('actifCheck').addEventListener('change', function() {
+    document.getElementById('actifLabel').textContent = this.checked ? 'Visible' : 'Masqué';
+  });
+};
+</script>
+</body>
+</html>

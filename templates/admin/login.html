@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — WariConnect</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:#0D0D0D;color:#F5EFE6;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .box{background:#161616;border:1px solid rgba(232,160,32,.2);border-radius:20px;width:100%;max-width:380px;padding:40px 32px;}
+  .logo{font-size:1.4rem;font-weight:700;color:#E8A020;text-align:center;margin-bottom:4px;}
+  .sub{text-align:center;color:rgba(255,255,255,.3);font-size:.8rem;margin-bottom:32px;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:.8rem;color:rgba(255,255,255,.4);margin-bottom:6px;}
+  .field input{width:100%;padding:12px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:.95rem;outline:none;transition:border-color .2s;}
+  .field input:focus{border-color:#E8A020;}
+  .btn{width:100%;padding:13px;background:#E8A020;border:none;border-radius:10px;color:#0D0D0D;font-weight:600;font-size:.95rem;cursor:pointer;transition:all .2s;margin-top:4px;}
+  .btn:hover{background:#f5b835;transform:translateY(-1px);}
+  .erreur{background:rgba(192,57,43,.15);border:1px solid rgba(192,57,43,.3);border-radius:8px;padding:10px;font-size:.85rem;color:#e74c3c;margin-bottom:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="logo">🔐 Admin WariConnect</div>
+  <div class="sub">Accès réservé à l'administrateur</div>
+  {% if erreur %}
+  <div class="erreur">❌ Mot de passe incorrect.</div>
+  {% endif %}
+  <form method="post">
+    <div class="field">
+      <label>Mot de passe admin</label>
+      <input type="password" name="password" placeholder="••••••••" autofocus required>
+    </div>
+    <button type="submit" class="btn">Accéder au tableau de bord</button>
+  </form>
+</div>
+</body>
+</html>

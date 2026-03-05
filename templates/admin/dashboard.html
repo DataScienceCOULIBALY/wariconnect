@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Admin — WariConnect</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:#0a0a0a;color:#F5EFE6;min-height:100vh;}
+  /* Sidebar */
+  .sidebar{position:fixed;top:0;left:0;width:220px;height:100vh;background:#111;border-right:1px solid rgba(232,160,32,.12);padding:24px 16px;display:flex;flex-direction:column;gap:6px;}
+  .sidebar-logo{font-family:'Playfair Display',serif;font-size:1.2rem;color:#E8A020;padding:8px 12px;margin-bottom:16px;}
+  .sidebar a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:rgba(255,255,255,.5);text-decoration:none;font-size:.88rem;transition:all .2s;}
+  .sidebar a:hover,.sidebar a.active{background:rgba(232,160,32,.1);color:#E8A020;}
+  .sidebar-bottom{margin-top:auto;}
+  /* Main */
+  .main{margin-left:220px;padding:32px;}
+  .page-title{font-family:'Playfair Display',serif;font-size:1.8rem;margin-bottom:8px;}
+  .page-sub{color:rgba(255,255,255,.35);font-size:.85rem;margin-bottom:28px;}
+  /* Stats */
+  .stats{display:flex;gap:16px;margin-bottom:28px;}
+  .stat{background:#161616;border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px 24px;flex:1;}
+  .stat-val{font-size:2rem;font-weight:700;color:#E8A020;}
+  .stat-label{font-size:.8rem;color:rgba(255,255,255,.35);margin-top:2px;}
+  /* Toolbar */
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .btn-add{padding:10px 20px;background:#E8A020;border:none;border-radius:10px;color:#0D0D0D;font-weight:600;font-size:.88rem;cursor:pointer;text-decoration:none;transition:all .2s;}
+  .btn-add:hover{background:#f5b835;transform:translateY(-1px);}
+  /* Table */
+  .table-wrap{background:#161616;border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;}
+  table{width:100%;border-collapse:collapse;}
+  th{padding:12px 16px;text-align:left;font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.3);border-bottom:1px solid rgba(255,255,255,.06);}
+  td{padding:14px 16px;font-size:.88rem;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(255,255,255,.02);}
+  .badge{padding:4px 10px;border-radius:50px;font-size:.72rem;font-weight:600;}
+  .badge-personne{background:rgba(192,57,43,.2);color:#e74c3c;}
+  .badge-whatsapp{background:rgba(37,211,102,.15);color:#25D366;}
+  .badge-telegram{background:rgba(0,136,204,.15);color:#0088CC;}
+  .toggle-btn{width:40px;height:22px;border-radius:11px;border:none;cursor:pointer;transition:background .2s;position:relative;}
+  .toggle-btn.on{background:#25D366;}
+  .toggle-btn.off{background:rgba(255,255,255,.1);}
+  .toggle-btn::after{content:'';position:absolute;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;}
+  .toggle-btn.on::after{left:21px;}
+  .toggle-btn.off::after{left:3px;}
+  .btn-edit{padding:6px 14px;background:rgba(232,160,32,.15);border:1px solid rgba(232,160,32,.3);border-radius:8px;color:#E8A020;font-size:.8rem;text-decoration:none;transition:all .2s;}
+  .btn-edit:hover{background:rgba(232,160,32,.3);}
+  .btn-del{padding:6px 14px;background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.2);border-radius:8px;color:#e74c3c;font-size:.8rem;cursor:pointer;transition:all .2s;}
+  .btn-del:hover{background:rgba(192,57,43,.25);}
+  .prix{color:#E8A020;font-weight:600;}
+  /* Flash */
+  .flash{padding:12px 16px;border-radius:10px;margin-bottom:20px;font-size:.88rem;}
+  .flash.success{background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.25);color:#25D366;}
+  .flash.info{background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.2);color:#E8A020;}
+  .empty{text-align:center;padding:48px;color:rgba(255,255,255,.2);}
+  @media(max-width:768px){.sidebar{display:none;}.main{margin-left:0;padding:20px;}}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo">⚡ WariConnect</div>
+  <a href="/admin" class="active">📊 Dashboard</a>
+  <a href="/admin/produit/nouveau">➕ Nouveau produit</a>
+  <a href="/" target="_blank">🌐 Voir le site</a>
+  <div class="sidebar-bottom">
+    <a href="/admin/logout">🚪 Déconnexion</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="page-title">Tableau de bord</div>
+  <div class="page-sub">Gérez vos profils et groupes WariConnect</div>
+
+  {% for msg in get_flashed_messages() %}
+    {% set parts = msg.split('|') %}
+    <div class="flash {{ parts[0] }}">{{ parts[1] }}</div>
+  {% endfor %}
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-val">{{ total }}</div>
+      <div class="stat-label">Total produits</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">{{ actifs }}</div>
+      <div class="stat-label">Visibles sur le site</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">{{ total - actifs }}</div>
+      <div class="stat-label">Masqués</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div style="font-size:.9rem;color:rgba(255,255,255,.4);">{{ total }} produit(s)</div>
+    <a href="/admin/produit/nouveau" class="btn-add">+ Nouveau produit</a>
+  </div>
+
+  <div class="table-wrap">
+    {% if produits %}
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Nom</th>
+          <th>Ville</th>
+          <th>Prix</th>
+          <th>Ordre</th>
+          <th>Visible</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in produits %}
+        <tr>
+          <td><span class="badge badge-{{ p.type }}">{{ p.emoji() }} {{ p.type }}</span></td>
+          <td><strong>{{ p.nom }}</strong></td>
+          <td>{{ p.ville }}{% if p.quartier %}, {{ p.quartier }}{% endif %}</td>
+          <td class="prix">{{ p.prix_formate() }}</td>
+          <td>{{ p.ordre }}</td>
+          <td>
+            <button class="toggle-btn {{ 'on' if p.actif else 'off' }}"
+                    onclick="toggleProduit({{ p.id }}, this)"
+                    title="{{ 'Visible' if p.actif else 'Masqué' }}"></button>
+          </td>
+          <td style="display:flex;gap:8px;">
+            <a href="/admin/produit/{{ p.id }}/modifier" class="btn-edit">✏️ Modifier</a>
+            <form method="post" action="/admin/produit/{{ p.id }}/supprimer" onsubmit="return confirm('Supprimer ce produit ?')">
+              <button type="submit" class="btn-del">🗑️</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+      <div style="font-size:2.5rem;margin-bottom:12px;">📭</div>
+      Aucun produit pour l'instant.<br>
+      <a href="/admin/produit/nouveau" style="color:#E8A020;text-decoration:none;">Ajouter le premier !</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+async function toggleProduit(id, btn) {
+  const res = await fetch(`/admin/produit/${id}/toggle`, {method:'POST'});
+  const data = await res.json();
+  btn.className = 'toggle-btn ' + (data.actif ? 'on' : 'off');
+}
+</script>
+</body>
+</html>
