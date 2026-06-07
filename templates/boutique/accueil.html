@@ -1120,11 +1120,14 @@ function showModal(p) {
   if (p.id) fetch(`/vue/${p.id}`, { method: 'POST' }).catch(() => {});
 
   document.getElementById('modalContact').classList.add('open');
+  history.pushState({modal: 'contact'}, '');
 }
 
 function fermerModal() {
+  if (!document.getElementById('modalContact').classList.contains('open')) return;
   document.getElementById('modalContact').classList.remove('open');
   stopPoll();
+  if (history.state && history.state.modal) history.back();
 }
 
 // ── Paiement API (Orange Money) ───────────────────────────
@@ -1188,11 +1191,30 @@ function afficherEchecPaiement() {
   document.getElementById('zoneAttente').style.display = 'none';
   document.getElementById('zoneEchec').style.display   = 'block';
 }
-function ouvrirFiltres() { document.getElementById('filterOverlay').classList.add('open'); }
-function fermerFiltres() { document.getElementById('filterOverlay').classList.remove('open'); }
+function ouvrirFiltres() {
+  document.getElementById('filterOverlay').classList.add('open');
+  history.pushState({modal: 'filter'}, '');
+}
+function fermerFiltres() {
+  if (!document.getElementById('filterOverlay').classList.contains('open')) return;
+  document.getElementById('filterOverlay').classList.remove('open');
+  if (history.state && history.state.modal) history.back();
+}
 
 document.getElementById('modalContact').addEventListener('click', e => {
   if (e.target === document.getElementById('modalContact')) fermerModal();
+});
+
+// Bouton retour physique → ferme le modal ouvert au lieu de quitter l'app
+window.addEventListener('popstate', () => {
+  if (document.getElementById('modalContact').classList.contains('open')) {
+    document.getElementById('modalContact').classList.remove('open');
+    stopPoll();
+  } else if (document.getElementById('filterOverlay').classList.contains('open')) {
+    document.getElementById('filterOverlay').classList.remove('open');
+  } else if (document.getElementById('iosModal').classList.contains('open')) {
+    document.getElementById('iosModal').classList.remove('open');
+  }
 });
 
 document.addEventListener('keydown', e => {
@@ -1256,13 +1278,15 @@ function installerApp() {
       btnInstall.classList.remove('visible');
     });
   } else {
-    // iOS : ouvrir le modal d'instructions
     document.getElementById('iosModal').classList.add('open');
+    history.pushState({modal: 'ios'}, '');
   }
 }
 
 function fermerIos() {
+  if (!document.getElementById('iosModal').classList.contains('open')) return;
   document.getElementById('iosModal').classList.remove('open');
+  if (history.state && history.state.modal) history.back();
 }
 
 window.addEventListener('appinstalled', () => {
