@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ produit.nom }} — Nongafo</title>
+<meta name="description" content="{{ produit.description or (produit.nom + ' à ' + produit.ville) }}">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--or:#E8A020;--rouge:#C0392B;--noir:#0D0D0D;--texte:#F5EFE6;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:var(--noir);color:var(--texte);min-height:100vh;}
+
+  header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 32px;background:linear-gradient(to bottom,rgba(13,13,13,.97),transparent);backdrop-filter:blur(8px);}
+  .logo{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:900;color:var(--or);letter-spacing:-1px;text-decoration:none;}
+  .logo span{color:var(--texte);}
+  .btn-retour{padding:8px 18px;border-radius:50px;border:1.5px solid rgba(232,160,32,.3);background:transparent;color:rgba(245,239,230,.7);font-family:'DM Sans',sans-serif;font-size:.85rem;text-decoration:none;transition:all .2s;}
+  .btn-retour:hover{border-color:var(--or);color:var(--or);}
+
+  .galerie-hero{position:relative;width:100%;height:70vh;background:#111;overflow:hidden;}
+  .galerie-hero img{width:100%;height:100%;object-fit:cover;transition:opacity .3s;}
+  .galerie-hero-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:6rem;background:linear-gradient(135deg,#1a1a2e,#16213e);}
+  .galerie-gradient{position:absolute;inset:0;background:linear-gradient(to top,rgba(13,13,13,1) 0%,rgba(13,13,13,.3) 40%,transparent 100%);pointer-events:none;}
+  .galerie-prev,.galerie-next{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);border:none;color:#fff;width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:1.2rem;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);transition:background .2s;}
+  .galerie-prev{left:20px;}
+  .galerie-next{right:20px;}
+  .galerie-prev:hover,.galerie-next:hover{background:rgba(232,160,32,.7);}
+  .galerie-dots{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px;}
+  .galerie-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);cursor:pointer;transition:background .2s;}
+  .galerie-dot.active{background:var(--or);}
+
+  .content{max-width:860px;margin:0 auto;padding:40px 24px 60px;}
+  .badges-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .badge{padding:5px 14px;border-radius:50px;font-size:.72rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;}
+  .badge-personne{background:var(--rouge);color:#fff;}
+  .badge-whatsapp{background:#25D366;color:#fff;}
+  .badge-telegram{background:#0088CC;color:#fff;}
+  .badge-new{background:var(--or);color:var(--noir);}
+  .produit-title{font-family:'Playfair Display',serif;font-size:clamp(2rem,5vw,3.2rem);font-weight:900;line-height:1.1;margin-bottom:12px;}
+  .produit-meta{font-size:.95rem;color:rgba(255,255,255,.5);margin-bottom:4px;}
+  .produit-vues{font-size:.82rem;color:rgba(255,255,255,.25);margin-bottom:32px;}
+
+  .detail-grid{display:grid;grid-template-columns:1fr 340px;gap:32px;align-items:start;}
+  .desc-label{font-size:.75rem;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.3);margin-bottom:10px;}
+  .desc-text{font-size:.95rem;color:rgba(255,255,255,.65);line-height:1.8;border-left:2px solid rgba(232,160,32,.3);padding-left:16px;}
+
+  .sidebar-detail{position:sticky;top:90px;}
+  .price-card{background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.2);border-radius:20px;padding:24px;}
+  .price-label{font-size:.72rem;color:var(--or);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+  .price-val{font-size:2.4rem;font-weight:700;color:var(--or);margin-bottom:20px;}
+  .payment-title{font-size:.75rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.35);margin-bottom:10px;}
+  .payment-methods{display:flex;gap:8px;margin-bottom:20px;}
+  .pm-badge{flex:1;padding:10px 8px;border-radius:10px;text-align:center;font-size:.78rem;font-weight:600;}
+  .pm-orange{background:rgba(255,140,0,.15);color:#FF8C00;border:1px solid rgba(255,140,0,.3);}
+  .pm-moov{background:rgba(0,100,200,.15);color:#4DA6FF;border:1px solid rgba(0,100,200,.3);}
+  .btn-whatsapp{width:100%;padding:16px;background:#25D366;border:none;border-radius:14px;color:#fff;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;}
+  .btn-whatsapp:hover{background:#1ebe5a;transform:translateY(-2px);box-shadow:0 8px 24px rgba(37,211,102,.3);}
+  .modal-note{text-align:center;font-size:.73rem;color:rgba(255,255,255,.2);margin-top:10px;line-height:1.6;}
+
+  .similaires-section{padding:48px 24px 80px;max-width:1200px;margin:0 auto;}
+  .similaires-title{font-family:'Playfair Display',serif;font-size:1.8rem;margin-bottom:8px;}
+  .similaires-sub{font-size:.85rem;color:rgba(255,255,255,.35);margin-bottom:32px;}
+  .similaires-grid{display:flex;flex-wrap:wrap;gap:20px;}
+  .sim-card{width:220px;border-radius:16px;overflow:hidden;background:#161616;border:1px solid rgba(255,255,255,.06);text-decoration:none;transition:transform .3s,box-shadow .3s;}
+  .sim-card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(0,0,0,.4);}
+  .sim-img{width:100%;height:160px;object-fit:cover;}
+  .sim-placeholder{width:100%;height:160px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:linear-gradient(135deg,#1a1a2e,#16213e);}
+  .sim-body{padding:14px;}
+  .sim-name{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;margin-bottom:4px;color:var(--texte);}
+  .sim-loc{font-size:.78rem;color:rgba(255,255,255,.4);margin-bottom:8px;}
+  .sim-price{font-size:.9rem;font-weight:600;color:var(--or);}
+
+  .wa-float{position:fixed;bottom:24px;right:24px;z-index:150;width:58px;height:58px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(37,211,102,.4);cursor:pointer;transition:all .3s;text-decoration:none;}
+  .wa-float:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(37,211,102,.6);}
+  .wa-float svg{width:28px;height:28px;fill:#fff;}
+
+  footer{text-align:center;padding:40px 20px;border-top:1px solid rgba(255,255,255,.07);color:rgba(255,255,255,.3);font-size:.8rem;}
+  footer span{color:var(--or);}
+
+  ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--noir)}::-webkit-scrollbar-thumb{background:rgba(232,160,32,.3);border-radius:3px}
+
+  @media(max-width:768px){
+    .detail-grid{grid-template-columns:1fr;}
+    .sidebar-detail{position:static;}
+    .galerie-hero{height:50vh;}
+    header{padding:14px 18px;}
+    .logo{font-size:1.3rem;}
+    .sim-card{width:calc(50% - 10px);}
+  }
+  @media(max-width:480px){.sim-card{width:100%;}}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Nonga<span>fo</span></a>
+  <a href="/" class="btn-retour">← Retour</a>
+</header>
+
+<!-- GALERIE HERO -->
+{% set photos = produit.liste_photos() %}
+<div class="galerie-hero">
+  {% if photos %}
+    <img src="{{ photos[0] }}" alt="{{ produit.nom }}" id="heroImg">
+    {% if photos|length > 1 %}
+    <button class="galerie-prev" onclick="changePhoto(-1)">‹</button>
+    <button class="galerie-next" onclick="changePhoto(1)">›</button>
+    <div class="galerie-dots" id="galerieDots">
+      {% for p in photos %}
+      <div class="galerie-dot {% if loop.first %}active{% endif %}" onclick="goPhoto({{ loop.index0 }})"></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% else %}
+    <div class="galerie-hero-placeholder">{{ produit.emoji() }}</div>
+  {% endif %}
+  <div class="galerie-gradient"></div>
+</div>
+
+<!-- CONTENU -->
+<div class="content">
+  <div class="badges-row">
+    <span class="badge badge-{{ produit.type }}">{{ produit.emoji() }} {{ produit.type_display() }}</span>
+    {% if produit.est_nouveau() %}<span class="badge badge-new">✨ NOUVEAU</span>{% endif %}
+  </div>
+  <h1 class="produit-title">{{ produit.nom }}</h1>
+  <div class="produit-meta">📍 {% if produit.quartier %}{{ produit.quartier }}, {% endif %}{{ produit.ville }}</div>
+  <div class="produit-vues">👁️ {{ produit.vues or 0 }} vue(s)</div>
+
+  <div class="detail-grid">
+    <div>
+      <div class="desc-label">À propos</div>
+      {% if produit.description %}
+        <div class="desc-text">{{ produit.description }}</div>
+      {% else %}
+        <div class="desc-text" style="color:rgba(255,255,255,.25);border-left-color:rgba(255,255,255,.1);">Aucune description disponible.</div>
+      {% endif %}
+    </div>
+
+    <div class="sidebar-detail">
+      <div class="price-card">
+        <div class="price-label">Frais d'accès</div>
+        <div class="price-val">{{ produit.prix_formate() }}</div>
+        <div class="payment-title">Paiement accepté</div>
+        <div class="payment-methods">
+          <div class="pm-badge pm-orange">🟠 Orange Money</div>
+          <div class="pm-badge pm-moov">🔵 Moov Money</div>
+        </div>
+        <a href="{{ whatsapp_url }}" target="_blank" class="btn-whatsapp">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Contacter via WhatsApp
+        </a>
+        <p class="modal-note">Tu seras redirigé vers WhatsApp avec les détails automatiquement.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SIMILAIRES -->
+{% if similaires %}
+<div class="similaires-section">
+  <h2 class="similaires-title">Profils <span style="color:var(--or)">similaires</span></h2>
+  <p class="similaires-sub">D'autres profils du même type qui pourraient t'intéresser</p>
+  <div class="similaires-grid">
+    {% for s in similaires %}
+    <a href="/produit/{{ s.id }}" class="sim-card">
+      {% if s.photo_principale() %}
+        <img src="{{ s.photo_principale() }}" alt="{{ s.nom }}" class="sim-img" loading="lazy">
+      {% else %}
+        <div class="sim-placeholder">{{ s.emoji() }}</div>
+      {% endif %}
+      <div class="sim-body">
+        <div class="sim-name">{{ s.nom }}</div>
+        <div class="sim-loc">📍 {% if s.quartier %}{{ s.quartier }}, {% endif %}{{ s.ville }}</div>
+        <div class="sim-price">{{ s.prix_formate() }}</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<footer>
+  &copy; 2025 <span>Nongafo</span> — Burkina Faso 🇧🇫<br>
+  Paiement via Orange Money ou Moov Money
+</footer>
+
+<a href="https://wa.me/{{ whatsapp_number }}" target="_blank" class="wa-float">
+  <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+</a>
+
+<script>
+const photos = {{ photos|tojson }};
+let idx = 0;
+
+function changePhoto(dir) {
+  goPhoto((idx + dir + photos.length) % photos.length);
+}
+
+function goPhoto(i) {
+  idx = i;
+  const img = document.getElementById('heroImg');
+  if (img) img.src = photos[i];
+  document.querySelectorAll('.galerie-dot').forEach((d, j) => d.classList.toggle('active', i === j));
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ titre }} — Nongafo Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:#0a0a0a;color:#F5EFE6;min-height:100vh;}
+  .sidebar{position:fixed;top:0;left:0;width:220px;height:100vh;background:#111;border-right:1px solid rgba(232,160,32,.12);padding:24px 16px;display:flex;flex-direction:column;gap:6px;z-index:250;}
+  .sidebar-logo{font-family:'Playfair Display',serif;font-size:1.2rem;color:#E8A020;padding:8px 12px;margin-bottom:16px;}
+  .sidebar a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:rgba(255,255,255,.5);text-decoration:none;font-size:.88rem;transition:all .2s;}
+  .sidebar a:hover,.sidebar a.active{background:rgba(232,160,32,.1);color:#E8A020;}
+  .sidebar-bottom{margin-top:auto;}
+  .main{margin-left:220px;padding:32px;max-width:760px;}
+  .page-title{font-family:'Playfair Display',serif;font-size:1.8rem;margin-bottom:4px;}
+  .page-sub{color:rgba(255,255,255,.35);font-size:.85rem;margin-bottom:28px;}
+  .card{background:#161616;border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:28px;}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .field{margin-bottom:18px;}
+  .field.full{grid-column:1/-1;}
+  .field label{display:block;font-size:.78rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;}
+  .field input,.field select,.field textarea{width:100%;padding:12px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.93rem;outline:none;transition:border-color .2s;}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:#E8A020;}
+  .field select option{background:#1a1a1a;}
+  .field textarea{resize:vertical;min-height:80px;}
+  .field input::placeholder,.field textarea::placeholder{color:rgba(255,255,255,.2);}
+  .hint{font-size:.75rem;color:rgba(255,255,255,.25);margin-top:5px;line-height:1.5;}
+
+  /* Multi-photos */
+  .photos-list{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
+  .photo-item{display:flex;gap:8px;align-items:center;}
+  .photo-item input{flex:1;}
+  .photo-item .preview{width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid rgba(232,160,32,.2);flex-shrink:0;display:none;}
+  .btn-remove{width:32px;height:32px;background:rgba(192,57,43,.2);border:1px solid rgba(192,57,43,.3);border-radius:8px;color:#e74c3c;cursor:pointer;font-size:.9rem;flex-shrink:0;}
+  .btn-add-photo{padding:8px 16px;background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.2);border-radius:8px;color:#E8A020;font-size:.82rem;cursor:pointer;transition:all .2s;margin-top:4px;}
+  .btn-add-photo:hover{background:rgba(232,160,32,.2);}
+  .btn-upload{padding:6px 12px;background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.25);border-radius:8px;color:#25D366;font-size:.78rem;cursor:pointer;flex-shrink:0;transition:all .2s;}
+  .btn-upload:hover{background:rgba(37,211,102,.2);}
+  .upload-progress{font-size:.72rem;color:#E8A020;margin-left:6px;display:none;}
+
+  /* Switch */
+  .switch-row{display:flex;align-items:center;gap:12px;margin-top:10px;}
+  .switch{position:relative;width:44px;height:24px;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;inset:0;background:rgba(255,255,255,.1);border-radius:12px;cursor:pointer;transition:.2s;}
+  .slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+  input:checked+.slider{background:#25D366;}
+  input:checked+.slider:before{left:23px;}
+  .switch-label{font-size:.88rem;color:rgba(255,255,255,.6);}
+
+  .btn-row{display:flex;gap:12px;margin-top:8px;}
+  .btn-save{padding:13px 28px;background:#E8A020;border:none;border-radius:10px;color:#0D0D0D;font-weight:600;font-size:.95rem;cursor:pointer;transition:all .2s;}
+  .btn-save:hover{background:#f5b835;transform:translateY(-1px);}
+  .btn-cancel{padding:13px 20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:rgba(255,255,255,.5);font-size:.95rem;text-decoration:none;transition:all .2s;}
+  .btn-cancel:hover{background:rgba(255,255,255,.08);}
+  @media(max-width:768px){
+    .sidebar{transform:translateX(-100%);transition:transform .25s;}
+    .sidebar.open{transform:translateX(0);}
+    .main{margin-left:0;padding:16px;}
+    .row{grid-template-columns:1fr;}
+    .layout{flex-direction:column;}
+    .preview-panel{width:100%;}
+  }
+  .hamburger{display:none;position:fixed;top:14px;left:14px;z-index:300;background:#E8A020;border:none;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:1.1rem;line-height:1;}
+  @media(max-width:768px){.hamburger{display:block;}}
+  .overlay-mob{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199;}
+  .overlay-mob.open{display:block;}
+  /* Layout deux colonnes */
+  .layout{display:flex;gap:24px;align-items:flex-start;}
+  .form-col{flex:1;min-width:0;}
+  /* Aperçu carte */
+  .preview-panel{width:320px;flex-shrink:0;position:sticky;top:24px;}
+  .preview-title{font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.3);margin-bottom:12px;}
+  .card-preview{width:100%;aspect-ratio:320/480;border-radius:20px;overflow:hidden;position:relative;background:linear-gradient(135deg,#1a1a2e,#16213e);}
+  .card-preview img{width:100%;height:100%;object-fit:cover;display:block;}
+  .card-preview-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.92) 0%,rgba(0,0,0,.3) 50%,transparent 100%);}
+  .card-preview-badge{position:absolute;top:12px;left:12px;padding:4px 12px;border-radius:50px;font-size:.7rem;font-weight:600;text-transform:uppercase;}
+  .badge-personne{background:#C0392B;color:#fff;}
+  .badge-whatsapp{background:#25D366;color:#fff;}
+  .badge-telegram{background:#0088CC;color:#fff;}
+  .card-preview-info{position:absolute;bottom:0;left:0;right:0;padding:20px 16px 16px;}
+  .card-preview-name{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;margin-bottom:4px;}
+  .card-preview-loc{font-size:1.4rem;color:#E8A020;margin-bottom:6px;}
+  .card-preview-price{font-size:1rem;font-weight:600;color:#E8A020;}
+</style>
+</head>
+<body>
+<button class="hamburger" onclick="toggleSidebar()">☰</button>
+<div class="overlay-mob" id="mobOverlay" onclick="toggleSidebar()"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo">⚡ Nongafo</div>
+  <a href="/admin">📊 Dashboard</a>
+  <a href="/admin/produit/nouveau" class="active">➕ Nouveau produit</a>
+  <a href="/" target="_blank">🌐 Voir le site</a>
+  <div class="sidebar-bottom"><a href="/admin/logout">🚪 Déconnexion</a></div>
+</div>
+
+<div class="main">
+  <div class="page-title">{{ titre }}</div>
+  <div class="page-sub">Remplis les informations du profil ou groupe</div>
+
+  <div class="layout">
+  <div class="form-col">
+  <div class="card">
+    <form method="post" id="mainForm">
+      <div class="row">
+
+        <div class="field">
+          <label>Type</label>
+          <select name="type">
+            <option value="personne"  {% if produit and produit.type == 'personne'  %}selected{% endif %}>👤 Personne</option>
+            <option value="whatsapp"  {% if produit and produit.type == 'whatsapp'  %}selected{% endif %}>💬 Groupe WhatsApp</option>
+            <option value="telegram"  {% if produit and produit.type == 'telegram'  %}selected{% endif %}>✈️ Groupe Telegram</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Prix (FCFA)</label>
+          <input type="number" name="prix" placeholder="ex: 2000" min="0"
+                 value="{{ produit.prix if produit else '' }}" required>
+        </div>
+
+        <div class="field full">
+          <label>Nom / Titre</label>
+          <input type="text" name="nom" placeholder="ex: Groupe Rencontres Ouaga, Sophie M...."
+                 value="{{ produit.nom if produit else '' }}" required>
+        </div>
+
+        <!-- MULTI PHOTOS -->
+        <div class="field full">
+          <label>Photos (jusqu'à 5 URLs)</label>
+          <div class="photos-list" id="photosList">
+            {% set photos = produit.liste_photos() if produit else [] %}
+            {% if photos %}
+              {% for url in photos %}
+              <div class="photo-item">
+                <input type="text" class="photo-url-input" placeholder="https://res.cloudinary.com/..." value="{{ url }}" oninput="previewItem(this)">
+                <img class="preview" src="{{ url }}" style="display:block">
+                <button type="button" class="btn-remove" onclick="retirerPhoto(this)">✕</button>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="photo-item">
+                <input type="text" class="photo-url-input" placeholder="https://res.cloudinary.com/..." oninput="previewItem(this)">
+                <img class="preview">
+                <button type="button" class="btn-remove" onclick="retirerPhoto(this)">✕</button>
+              </div>
+            {% endif %}
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+            <button type="button" class="btn-add-photo" onclick="ajouterPhoto()">+ Ajouter une URL</button>
+            <label class="btn-upload" style="cursor:pointer;">
+              📁 Depuis mon PC
+              <input type="file" accept="image/*" multiple style="display:none" onchange="uploadFichiers(this)">
+            </label>
+            <span class="upload-progress" id="uploadProgress">⏳ Envoi...</span>
+          </div>
+          <div class="hint">Colle une URL ou uploade depuis ton PC. La 1ère photo sera la principale.</div>
+          <input type="hidden" name="photos" id="photosHidden">
+        </div>
+
+        <div class="field">
+          <label>Ville</label>
+          <input type="text" name="ville" placeholder="ex: Ouagadougou" list="villes-bf"
+                 value="{{ produit.ville if produit else '' }}" required autocomplete="off">
+          <datalist id="villes-bf">
+            <option value="Ouagadougou">
+            <option value="Bobo-Dioulasso">
+            <option value="Koudougou">
+            <option value="Banfora">
+            <option value="Ouahigouya">
+            <option value="Pouytenga">
+            <option value="Kaya">
+            <option value="Tenkodogo">
+            <option value="Fada N'Gourma">
+            <option value="Dédougou">
+            <option value="Manga">
+            <option value="Ziniaré">
+            <option value="Kongoussi">
+            <option value="Réo">
+            <option value="Gaoua">
+            <option value="Dori">
+            <option value="Diapaga">
+            <option value="Bogandé">
+            <option value="Titao">
+            <option value="Nouna">
+            <option value="Léo">
+            <option value="Tougan">
+            <option value="Zorgo">
+            <option value="Kombissiri">
+            <option value="Pô">
+            <option value="Garango">
+            <option value="Yako">
+            <option value="Boulsa">
+            <option value="Ziniare">
+            <option value="Boromo">
+          </datalist>
+        </div>
+
+        <div class="field">
+          <label>Quartier <span style="color:rgba(255,255,255,.25)">(optionnel)</span></label>
+          <input type="text" name="quartier" placeholder="ex: Ouaga 2000" list="quartiers-bf"
+                 value="{{ produit.quartier if produit and produit.quartier else '' }}" autocomplete="off">
+          <datalist id="quartiers-bf">
+            <!-- Ouagadougou -->
+            <option value="Ouaga 2000">
+            <option value="Gounghin">
+            <option value="Pissy">
+            <option value="Tampouy">
+            <option value="Tanghin">
+            <option value="Wemtenga">
+            <option value="Karpala">
+            <option value="Kamsaoghin">
+            <option value="Paspanga">
+            <option value="Zogona">
+            <option value="Bilbalogho">
+            <option value="Nongr-Maassom">
+            <option value="Samandin">
+            <option value="Hamdalaye">
+            <option value="Wayalghin">
+            <option value="Rimkiéta">
+            <option value="Somgandé">
+            <option value="Kossodo">
+            <option value="Cissin">
+            <option value="Zone du Bois">
+            <option value="Koulouba">
+            <option value="Sig-Noghin">
+            <option value="Nagrin">
+            <option value="Toghin">
+            <option value="Larlé">
+            <option value="Nioko">
+            <option value="Paglayiri">
+            <option value="Dassasgo">
+            <option value="Secteur 15">
+            <option value="Secteur 17">
+            <option value="Secteur 27">
+            <option value="Secteur 30">
+            <!-- Bobo-Dioulasso -->
+            <option value="Sarfalao">
+            <option value="Bolomakoté">
+            <option value="Accart-ville">
+            <option value="Bindougousso">
+            <option value="Colsama">
+            <option value="Konsa">
+            <option value="Dogona">
+          </datalist>
+        </div>
+
+        <div class="field full">
+          <label>Description <span style="color:rgba(255,255,255,.25)">(optionnel)</span></label>
+          <textarea name="description" placeholder="Décris ce profil ou groupe...">{{ produit.description if produit and produit.description else '' }}</textarea>
+        </div>
+
+        <div class="field">
+          <label>Ordre d'affichage</label>
+          <input type="number" name="ordre" placeholder="0" min="0"
+                 value="{{ produit.ordre if produit else 0 }}">
+          <div class="hint">0 = en premier</div>
+        </div>
+
+        <div class="field">
+          <label>WhatsApp personnalisé <span style="color:rgba(255,255,255,.25)">(optionnel)</span></label>
+          <input type="text" name="whatsapp_perso" placeholder="ex: 22670000000"
+                 value="{{ produit.whatsapp_perso if produit and produit.whatsapp_perso else '' }}">
+          <div class="hint">Numéro sans + ni espaces. Si vide, le numéro global est utilisé.</div>
+        </div>
+
+        <div class="field" style="display:flex;flex-direction:column;justify-content:center;">
+          <label>Visible sur le site</label>
+          <div class="switch-row">
+            <label class="switch">
+              <input type="checkbox" name="actif" id="actifCheck"
+                     {% if not produit or produit.actif %}checked{% endif %}>
+              <span class="slider"></span>
+            </label>
+            <span class="switch-label" id="actifLabel">Visible</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="btn-row">
+        <button type="submit" class="btn-save">💾 Enregistrer</button>
+        <a href="/admin" class="btn-cancel">Annuler</a>
+      </div>
+    </form>
+  </div>
+  </div><!-- /form-col -->
+
+  <!-- APERÇU CARTE -->
+  <div class="preview-panel">
+    <div class="preview-title">Aperçu de la carte</div>
+    <div class="card-preview" id="cardPreview">
+      <img id="prevImg" src="" alt="" style="display:none">
+      <div class="card-preview-overlay"></div>
+      <span class="card-preview-badge badge-personne" id="prevBadge">👤 personne</span>
+      <div class="card-preview-info">
+        <div class="card-preview-name" id="prevNom">Nom du profil</div>
+        <div class="card-preview-loc" id="prevLoc">📍 Ville</div>
+        <div class="card-preview-price" id="prevPrix">0 FCFA</div>
+      </div>
+    </div>
+  </div>
+  </div><!-- /layout -->
+</div>
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<script>
+// Menu mobile
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('mobOverlay').classList.toggle('open');
+}
+
+// Aperçu live
+const EMOJI = {personne:'👤', whatsapp:'💬', telegram:'✈️'};
+const BADGE_CLASS = {personne:'badge-personne', whatsapp:'badge-whatsapp', telegram:'badge-telegram'};
+
+function updatePreview() {
+  const nom   = document.querySelector('[name=nom]').value || 'Nom du profil';
+  const ville = document.querySelector('[name=ville]').value || 'Ville';
+  const qrt   = document.querySelector('[name=quartier]').value;
+  const prix  = parseInt(document.querySelector('[name=prix]').value || 0);
+  const type  = document.querySelector('[name=type]').value;
+  const firstPhoto = document.querySelector('.photo-url-input')?.value || '';
+
+  document.getElementById('prevNom').textContent = nom;
+  document.getElementById('prevLoc').textContent = '📍 ' + (qrt ? qrt + ', ' : '') + ville;
+  document.getElementById('prevPrix').textContent = prix.toLocaleString('fr-FR') + ' FCFA';
+
+  const badge = document.getElementById('prevBadge');
+  badge.textContent = (EMOJI[type] || '👤') + ' ' + type;
+  badge.className = 'card-preview-badge ' + (BADGE_CLASS[type] || 'badge-personne');
+
+  const img = document.getElementById('prevImg');
+  if (firstPhoto.startsWith('http')) {
+    img.src = firstPhoto;
+    img.style.display = 'block';
+  } else {
+    img.style.display = 'none';
+  }
+}
+
+document.addEventListener('input', updatePreview);
+document.querySelector('[name=type]').addEventListener('change', updatePreview);
+updatePreview();
+
+function previewItem(input) {
+  const img = input.nextElementSibling;
+  if (input.value.startsWith('http')) {
+    img.src = input.value;
+    img.style.display = 'block';
+  } else {
+    img.style.display = 'none';
+  }
+}
+
+function retirerPhoto(btn) {
+  const list = document.getElementById('photosList');
+  if (list.children.length > 1) btn.closest('.photo-item').remove();
+  else { btn.closest('.photo-item').querySelector('input').value = ''; btn.closest('.photo-item').querySelector('.preview').style.display='none'; }
+}
+
+async function uploadFichiers(input) {
+  const progress = document.getElementById('uploadProgress');
+  const files = [...input.files];
+  if (!files.length) return;
+  progress.style.display = 'inline';
+  for (const file of files) {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/admin/upload-photo', {method:'POST', body:formData});
+      const data = await res.json();
+      if (data.url) {
+        const list = document.getElementById('photosList');
+        // Chercher un champ vide en premier
+        const empty = [...list.querySelectorAll('.photo-url-input')].find(i => !i.value);
+        if (empty && list.children.length < 5) {
+          empty.value = data.url;
+          previewItem(empty);
+        } else if (list.children.length < 5) {
+          ajouterPhoto();
+          const last = list.lastElementChild.querySelector('.photo-url-input');
+          last.value = data.url;
+          previewItem(last);
+        }
+        updatePreview();
+      } else {
+        alert('Erreur upload : ' + (data.error || 'inconnu'));
+      }
+    } catch(e) {
+      alert('Erreur réseau lors de l\'upload');
+    }
+  }
+  progress.style.display = 'none';
+  input.value = '';
+}
+
+function ajouterPhoto() {
+  const list = document.getElementById('photosList');
+  if (list.children.length >= 5) return;
+  const div = document.createElement('div');
+  div.className = 'photo-item';
+  div.innerHTML = `<input type="text" class="photo-url-input" placeholder="https://res.cloudinary.com/..." oninput="previewItem(this)"><img class="preview"><button type="button" class="btn-remove" onclick="retirerPhoto(this)">✕</button>`;
+  list.appendChild(div);
+}
+
+document.getElementById('mainForm').addEventListener('submit', function() {
+  const urls = [...document.querySelectorAll('.photo-url-input')]
+    .map(i => i.value.trim()).filter(v => v.startsWith('http'));
+  document.getElementById('photosHidden').value = urls.join('|');
+});
+
+document.getElementById('actifCheck').addEventListener('change', function() {
+  document.getElementById('actifLabel').textContent = this.checked ? 'Visible' : 'Masqué';
+});
+</script>
+</body>
+</html>

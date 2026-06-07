@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Nongafo — Rencontres Burkina Faso</title>
+<meta property="og:title" content="Nongafo — Rencontres Burkina Faso">
+<meta property="og:description" content="Swipe les profils et contacte directement via WhatsApp. 🇧🇫">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://nongafo.vercel.app">
+{% set og_image = produits[0].photo_principale() if produits and produits[0].photo_principale() else '' %}
+{% if og_image %}
+<meta property="og:image" content="{{ og_image }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="{{ og_image }}">
+{% endif %}
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#E8A020">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nongafo">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --or: #E8A020;
+  --rouge: #e74c3c;
+  --vert: #2ecc71;
+  --noir: #0D0D0D;
+  --texte: #F5EFE6;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--noir);
+  color: var(--texte);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* HEADER */
+header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px 12px 10px;
+  background: rgba(13,13,13,0.97);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(232,160,32,0.12);
+}
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.9rem;
+  font-weight: 900;
+  color: var(--or);
+}
+.logo span { color: var(--texte); }
+
+.btn-filter {
+  background: var(--or);
+  border: none;
+  border-radius: 50px;
+  color: var(--noir);
+  padding: 5px 10px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s;
+  box-shadow: 0 4px 14px rgba(232,160,32,0.4);
+}
+.btn-filter:hover { background: #f5b835; }
+
+/* LAYOUT */
+.main {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 56px;
+}
+
+/* SWIPE AREA */
+.swipe-area {
+  flex: 1;
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px 0;
+  position: relative;
+}
+
+.card-stack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* CARDS */
+.swipe-card {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #1a1a2e;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  will-change: transform;
+  touch-action: none;
+  cursor: grab;
+}
+.swipe-card:active { cursor: grabbing; }
+
+.card-depth-0 { z-index: 3; }
+.card-depth-1 { z-index: 2; transform: scale(0.95) translateY(14px); }
+.card-depth-2 { z-index: 1; transform: scale(0.90) translateY(28px); }
+
+.card-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+.card-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  font-size: 6rem;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+}
+.card-placeholder .type-name {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.5);
+  text-align: center;
+  padding: 0 20px;
+}
+
+.card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top,
+    rgba(0,0,0,0.92) 0%,
+    rgba(0,0,0,0.25) 55%,
+    transparent 100%);
+}
+
+.card-type-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 5px 13px;
+  border-radius: 50px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+.badge-personne { background: #c0392b; color: #fff; }
+.badge-whatsapp { background: #25D366; color: #fff; }
+.badge-telegram { background: #0088CC; color: #fff; }
+
+.badge-new {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: var(--or);
+  color: var(--noir);
+  padding: 4px 10px;
+  border-radius: 50px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.card-info {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 24px 22px 22px;
+}
+.card-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.1rem;
+  font-weight: 900;
+  line-height: 1.1;
+  margin-bottom: 6px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+}
+.card-location {
+  font-size: 1.05rem;
+  color: #fff;
+  font-weight: 600;
+  margin-bottom: 4px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+  letter-spacing: 0.3px;
+}
+.card-desc {
+  font-size: 1rem;
+  color: rgba(255,255,255,0.95);
+  font-weight: 500;
+  margin-top: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+  line-height: 1.4;
+}
+.card-price {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--or);
+  margin-top: 10px;
+}
+
+/* SWIPE STAMPS */
+.stamp {
+  position: absolute;
+  top: 36px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 4px solid;
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+  transition: opacity 0.06s;
+}
+.stamp-oui {
+  left: 18px;
+  color: var(--vert);
+  border-color: var(--vert);
+  transform: rotate(-15deg);
+}
+.stamp-non {
+  right: 18px;
+  color: var(--rouge);
+  border-color: var(--rouge);
+  transform: rotate(15deg);
+}
+
+/* ACTION BAR */
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 14px 24px 20px;
+  width: 100%;
+  background: rgba(13,13,13,0.97);
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.btn-action {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2.5px solid;
+  background: transparent;
+  font-size: 1.7rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-pass { border-color: var(--rouge); color: var(--rouge); }
+.btn-pass:active { background: var(--rouge); color: #fff; transform: scale(0.92); }
+
+.btn-like { border-color: var(--vert); color: var(--vert); }
+.btn-like:active { background: var(--vert); color: #fff; transform: scale(0.92); }
+
+.card-counter {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  min-width: 60px;
+  line-height: 1.4;
+}
+
+/* EMPTY STATE */
+.empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 40px;
+}
+.empty-emoji { font-size: 3.5rem; }
+.empty-state h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  color: var(--or);
+}
+.empty-state p {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.6;
+}
+.btn-reset {
+  padding: 12px 28px;
+  background: var(--or);
+  border: none;
+  border-radius: 50px;
+  color: var(--noir);
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: 'DM Sans', sans-serif;
+  margin-top: 6px;
+  text-decoration: none;
+  display: inline-block;
+  transition: background 0.2s;
+}
+.btn-reset:hover { background: #f5b835; }
+
+/* FILTER DRAWER */
+.filter-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
+  align-items: flex-end;
+}
+.filter-overlay.open { display: flex; }
+.filter-drawer {
+  width: 100%;
+  background: #222;
+  border-radius: 24px 24px 0 0;
+  padding: 28px 24px 36px;
+  border-top: 3px solid var(--or);
+  animation: slideUp 0.3s cubic-bezier(.22,.68,0,1.2);
+}
+.filter-drawer h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem;
+  font-weight: 900;
+  margin-bottom: 20px;
+  color: #fff;
+  text-align: center;
+}
+.search-form {
+  display: flex;
+  margin-bottom: 20px;
+}
+.search-form input {
+  flex: 1;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.1);
+  border: 2px solid rgba(232,160,32,0.5);
+  border-right: none;
+  border-radius: 50px 0 0 50px;
+  color: #fff;
+  font-size: 1rem;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+}
+.search-form input::placeholder { color: rgba(255,255,255,0.5); }
+.search-form button {
+  padding: 14px 22px;
+  background: var(--or);
+  border: none;
+  border-radius: 0 50px 50px 0;
+  color: var(--noir);
+  font-weight: 800;
+  cursor: pointer;
+  font-size: 1rem;
+}
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.filter-chip {
+  padding: 12px 24px;
+  border-radius: 50px;
+  border: 2px solid rgba(255,255,255,0.35);
+  background: transparent;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.filter-chip.active, .filter-chip:hover {
+  background: var(--or);
+  border-color: var(--or);
+  color: var(--noir);
+  font-weight: 800;
+}
+.filter-close {
+  width: 100%;
+  padding: 14px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* MODAL CONTACT */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0,0,0,0.88);
+  backdrop-filter: blur(10px);
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #161616;
+  border: 1px solid rgba(232,160,32,0.2);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  animation: modalIn 0.35s cubic-bezier(.22,.68,0,1.2);
+  max-height: 90vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  background: rgba(0,0,0,0.55);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  color: #fff;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+.modal-close:hover { background: rgba(255,255,255,0.15); }
+.modal-img {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  display: block;
+}
+.modal-img-placeholder {
+  width: 100%;
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4.5rem;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+}
+.modal-body { padding: 22px 26px 28px; }
+.match-label {
+  text-align: center;
+  font-size: 0.68rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--vert);
+  margin-bottom: 8px;
+}
+.modal-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.55rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 4px;
+}
+.modal-loc {
+  text-align: center;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 16px;
+}
+.modal-desc {
+  font-size: 0.87rem;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.6;
+  margin-bottom: 18px;
+  border-left: 2px solid rgba(232,160,32,0.3);
+  padding-left: 12px;
+}
+.modal-price-box {
+  background: rgba(232,160,32,0.1);
+  border: 1px solid rgba(232,160,32,0.25);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  text-align: center;
+}
+.modal-price-label {
+  font-size: 0.7rem;
+  color: var(--or);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.modal-price-val { font-size: 1.75rem; font-weight: 700; color: var(--or); }
+
+.payment-methods { display: flex; gap: 10px; margin-bottom: 22px; }
+.pm-badge {
+  flex: 1;
+  padding: 13px 8px;
+  border-radius: 14px;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  display: block;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.15s;
+  line-height: 1.4;
+}
+.pm-badge:active { transform: scale(0.95); opacity: 0.8; }
+.pm-orange { background: rgba(255,140,0,0.15); color: #FF8C00; border: 1.5px solid rgba(255,140,0,0.4); }
+.pm-moov   { background: rgba(0,100,200,0.12); color: #4DA6FF; border: 1.5px solid rgba(0,100,200,0.35); }
+
+.btn-whatsapp {
+  width: 100%;
+  padding: 15px;
+  background: #25D366;
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-decoration: none;
+  margin-bottom: 10px;
+  transition: background 0.2s, transform 0.15s;
+}
+.btn-whatsapp:hover { background: #1ebe5a; transform: translateY(-1px); }
+
+.btn-continuer {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  color: rgba(255,255,255,0.45);
+  font-size: 0.88rem;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-continuer:hover { background: rgba(255,255,255,0.05); color: #fff; }
+
+@keyframes modalIn   { from{opacity:0;transform:scale(.92) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
+
+/* BOUTON INSTALLER */
+.btn-install {
+  display: none;
+  background: rgba(232,160,32,0.15);
+  border: 1.5px solid var(--or);
+  border-radius: 50px;
+  color: var(--or);
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  gap: 6px;
+  align-items: center;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.btn-install.visible { display: flex; }
+.btn-install:hover { background: rgba(232,160,32,0.25); }
+
+@keyframes slideUp   { from{transform:translateY(100%)} to{transform:translateY(0)} }
+@keyframes spin      { to{transform:rotate(360deg)} }
+@keyframes flyRight  { to{transform:translateX(160%) rotate(30deg);opacity:0} }
+@keyframes flyLeft   { to{transform:translateX(-160%) rotate(-30deg);opacity:0} }
+
+/* GALLERY DOTS */
+.card-dots {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+  pointer-events: none;
+}
+.card-dot {
+  flex: 1;
+  height: 2.5px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.4);
+  transition: background 0.25s;
+}
+.card-dot.active { background: #fff; }
+
+/* MATCH BURST */
+.match-burst {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 500;
+  overflow: hidden;
+}
+.match-heart {
+  position: absolute;
+  opacity: 0;
+  animation: heartFly 1s ease-out forwards;
+}
+@keyframes heartFly {
+  0%   { opacity: 1; transform: translate(-50%,-50%) scale(0.2); }
+  45%  { opacity: 1; transform: translate(calc(-50% + var(--tx)*.55), calc(-50% + var(--ty)*.55)) scale(1.3); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.7); }
+}
+
+/* PUB CARD */
+.card-pub-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 32px 24px;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(232,160,32,0.12), rgba(192,57,43,0.08));
+}
+.pub-icon { font-size: 3rem; }
+.pub-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.3); }
+.pub-texte { font-size: 0.92rem; line-height: 1.55; color: var(--texte); }
+.pub-num   { font-size: 1rem; font-weight: 700; color: var(--or); }
+.pub-cta   { padding: 12px 28px; background: var(--or); border-radius: 50px; color: var(--noir); font-weight: 700; font-size: 0.85rem; cursor: pointer; border: none; font-family: 'DM Sans',sans-serif; }
+
+@media (max-width: 420px) {
+  .card-name { font-size: 1.9rem; }
+  .card-location { font-size: 1rem; }
+  .card-desc { font-size: 0.95rem; }
+  .logo { font-size: 1.7rem; }
+  .btn-action { width: 58px; height: 58px; font-size: 1.5rem; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Nonga<span>fo</span></div>
+  <div style="display:flex;align-items:center;gap:10px;">
+  <button class="btn-filter" onclick="ouvrirFiltres()">
+    ⚙️
+    {% if type_filtre != 'tous' %}{{ type_filtre | capitalize }}{% elif recherche %}Filtres{% else %}Filtres{% endif %}
+    {% if type_filtre != 'tous' or recherche %}<span style="display:inline-block;width:7px;height:7px;background:var(--or);border-radius:50%;margin-left:2px;vertical-align:middle;"></span>{% endif %}
+  </button>
+  <button class="btn-install" id="btnInstall" onclick="installerApp()">📲 Installer</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="swipe-area">
+    <div class="card-stack" id="cardStack">
+      {% if not produits %}
+      <div class="empty-state">
+        <div class="empty-emoji">🔍</div>
+        <h2>Aucun profil</h2>
+        <p>{% if recherche %}Aucun résultat pour « {{ recherche }} ».{% else %}Aucun profil disponible pour le moment.{% endif %}</p>
+        <a href="/" class="btn-reset">Voir tous les profils</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-action btn-pass" onclick="swipeLeft()" aria-label="Passer">✕</button>
+    <div class="card-counter" id="cardCounter"></div>
+    <button class="btn-action btn-like" onclick="swipeRight()" aria-label="Contacter">❤️</button>
+  </div>
+</div>
+
+<!-- MODAL iOS -->
+<div class="modal-overlay" id="iosModal" style="z-index:400;">
+  <div class="modal" style="max-width:340px;">
+    <button class="modal-close" onclick="fermerIos()">✕</button>
+    <div class="modal-body" style="text-align:center;padding-top:32px;">
+      <div style="font-size:3rem;margin-bottom:12px;">📲</div>
+      <div class="modal-name" style="margin-bottom:12px;">Installer Nongafo</div>
+      <p style="color:rgba(255,255,255,0.7);font-size:0.95rem;line-height:1.7;margin-bottom:24px;">
+        Appuie sur <strong style="color:var(--or);">⬆️ Partager</strong><br>
+        puis <strong style="color:var(--or);">"Sur l'écran d'accueil"</strong>
+      </p>
+      <button onclick="fermerIos()" class="btn-whatsapp" style="background:var(--or);color:var(--noir);">Compris !</button>
+    </div>
+  </div>
+</div>
+
+<!-- FILTER DRAWER -->
+<div class="filter-overlay" id="filterOverlay" onclick="if(event.target===this)fermerFiltres()">
+  <div class="filter-drawer">
+    <h3>Recherche & Filtres</h3>
+    <form action="/" method="get" class="search-form">
+      {% if type_filtre and type_filtre != 'tous' %}
+      <input type="hidden" name="type" value="{{ type_filtre }}">
+      {% endif %}
+      <input type="text" name="q" placeholder="🔍 Nom, ville, quartier..." value="{{ recherche }}">
+      <button type="submit">OK</button>
+    </form>
+    <div class="filter-chips">
+      <a href="/?{% if recherche %}q={{ recherche }}&{% endif %}type=tous"      class="filter-chip {% if type_filtre == 'tous' %}active{% endif %}">Tous</a>
+      <a href="/?{% if recherche %}q={{ recherche }}&{% endif %}type=personne"  class="filter-chip {% if type_filtre == 'personne' %}active{% endif %}">👤 Personnes</a>
+      <a href="/?{% if recherche %}q={{ recherche }}&{% endif %}type=whatsapp"  class="filter-chip {% if type_filtre == 'whatsapp' %}active{% endif %}">💬 WhatsApp</a>
+      <a href="/?{% if recherche %}q={{ recherche }}&{% endif %}type=telegram"  class="filter-chip {% if type_filtre == 'telegram' %}active{% endif %}">✈️ Telegram</a>
+    </div>
+    {% if recherche %}
+    <a href="/?type={{ type_filtre }}" class="filter-chip" style="display:block;text-align:center;margin-bottom:12px;">✕ Effacer la recherche</a>
+    {% endif %}
+    <button class="filter-close" onclick="fermerFiltres()">Fermer</button>
+  </div>
+</div>
+
+<!-- MODAL CONTACT (après like) -->
+<div class="modal-overlay" id="modalContact">
+  <div class="modal">
+    <button class="modal-close" onclick="fermerModal()">✕</button>
+    <div id="modalImgZone"></div>
+    <div class="modal-body">
+      <div class="match-label">✨ Tu as aimé ce profil</div>
+      <div class="modal-name" id="modalNom"></div>
+      <div class="modal-loc"  id="modalLoc"></div>
+      <div class="modal-desc" id="modalDesc" style="display:none"></div>
+      <div class="modal-price-box">
+        <div class="modal-price-label">Frais d'accès</div>
+        <div class="modal-price-val" id="modalPrix"></div>
+      </div>
+
+      <!-- MODE API : saisie numéro + spinner (s'affiche quand OM_ACTIVE=true) -->
+      <div id="zoneAPI" style="display:none">
+        <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.35);margin-bottom:10px;">Ton numéro Orange Money</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <input id="inputNumero" type="tel" placeholder="ex: 70000000"
+            style="flex:1;padding:13px 16px;background:rgba(255,255,255,.08);border:1.5px solid rgba(232,160,32,.4);border-radius:12px;color:#fff;font-size:1rem;font-family:'DM Sans',sans-serif;outline:none;">
+          <button onclick="lancerPaiementAPI()" id="btnPayerAPI"
+            style="padding:13px 18px;background:var(--or);border:none;border-radius:12px;color:#0D0D0D;font-weight:800;font-size:.9rem;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;">
+            Payer
+          </button>
+        </div>
+        <!-- Spinner attente -->
+        <div id="zoneAttente" style="display:none;text-align:center;padding:16px 0;">
+          <div style="font-size:2rem;animation:spin 1s linear infinite;display:inline-block;">⏳</div>
+          <div style="font-size:.88rem;color:rgba(255,255,255,.6);margin-top:8px;line-height:1.5;">
+            Confirme le paiement sur ton téléphone…<br>
+            <span style="font-size:.78rem;opacity:.6;">Vérification automatique en cours</span>
+          </div>
+        </div>
+        <!-- Succès : contact révélé automatiquement -->
+        <div id="zoneContact" style="display:none;">
+          <div style="text-align:center;font-size:1.5rem;margin-bottom:8px;">🎉</div>
+          <div style="text-align:center;font-size:.9rem;color:var(--vert);font-weight:700;margin-bottom:14px;">Paiement confirmé !</div>
+          <a id="btnContactDirect" href="#" target="_blank" class="btn-whatsapp">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Contacter maintenant
+          </a>
+        </div>
+        <!-- Échec -->
+        <div id="zoneEchec" style="display:none;text-align:center;padding:12px 0;">
+          <div style="color:var(--rouge);font-size:.9rem;margin-bottom:10px;">❌ Paiement annulé ou échoué</div>
+          <button onclick="resetZoneAPI()" style="background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:10px;color:rgba(255,255,255,.6);padding:10px 20px;cursor:pointer;font-family:'DM Sans',sans-serif;">Réessayer</button>
+        </div>
+      </div>
+
+      <!-- MODE USSD : fallback si API non configurée -->
+      <div id="zoneUSSD">
+        <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.35);margin-bottom:10px;">① Payer</div>
+        <div class="payment-methods">
+          <a id="btnOM" href="#" class="pm-badge pm-orange">🟠 Orange Money<br><span style="font-size:.7rem;opacity:.8;">Appuie pour payer</span></a>
+          <a id="btnMoov" href="#" class="pm-badge pm-moov">🔵 Moov Money<br><span style="font-size:.7rem;opacity:.8;">Appuie pour payer</span></a>
+        </div>
+        <div style="font-size:.75rem;color:rgba(255,255,255,.3);text-align:center;margin:-6px 0 16px;line-height:1.5;">Ton téléphone ouvrira directement le paiement USSD</div>
+        <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.35);margin-bottom:10px;">② Confirmer & recevoir le contact</div>
+        <a id="btnWhatsapp" href="#" target="_blank" class="btn-whatsapp">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Envoyer la preuve sur WhatsApp
+        </a>
+      </div>
+
+      <button class="btn-continuer" onclick="fermerModal()">Continuer à parcourir →</button>
+    </div>
+  </div>
+</div>
+
+<div id="matchBurst" class="match-burst"></div>
+
+<script>
+const WA_DEFAULT = "{{ whatsapp_number }}";
+
+// Profiles injected from server
+const profiles = [
+  {% for p in produits %}
+  {
+    id: {{ p.id }},
+    nom: {{ p.nom|tojson }},
+    ville: {{ p.ville|tojson }},
+    quartier: {{ (p.quartier or '')|tojson }},
+    prix: {{ p.prix_formate()|tojson }},
+    desc: {{ (p.description or '')|tojson }},
+    photos: {{ p.liste_photos()|tojson }},
+    wa: {{ (p.whatsapp_perso or whatsapp_number)|tojson }},
+    prix_raw: {{ p.prix or 0 }},
+    type: {{ p.type|tojson }},
+    isNew: {{ p.est_nouveau()|tojson }},
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+  {% if pub %}
+  ,{
+    id: 0,
+    nom: "Info importante",
+    ville: "", quartier: "",
+    prix: "3 000 FCFA",
+    desc: {{ pub.texte|tojson }},
+    photos: {% if pub.image %}[{{ pub.image|tojson }}]{% else %}[]{% endif %},
+    wa: {{ (pub.lien or whatsapp_number)|tojson }},
+    type: "pub",
+    isNew: false,
+    pubLien: {{ (pub.lien or '')|tojson }},
+  }
+  {% endif %}
+];
+
+// Insert pub card at position 3 if it exists
+(function() {
+  const pubIdx = profiles.findIndex(p => p.type === 'pub');
+  if (pubIdx > 3) {
+    const [pub] = profiles.splice(pubIdx, 1);
+    profiles.splice(3, 0, pub);
+  }
+})();
+
+let current = 0;
+let isDragging = false;
+let startX = 0, currentX = 0;
+let activeCard = null;
+let animating = false;
+
+const stack  = document.getElementById('cardStack');
+const counter = document.getElementById('cardCounter');
+
+function emoji(type) {
+  return type === 'whatsapp' ? '💬' : type === 'telegram' ? '✈️' : '👤';
+}
+
+function navigatePhoto(card, p, direction) {
+  const idx = parseInt(card.dataset.photoIdx || '0');
+  const newIdx = Math.max(0, Math.min(p.photos.length - 1, idx + direction));
+  if (newIdx === idx) return;
+  card.dataset.photoIdx = newIdx;
+  const img = card.querySelector('.card-photo');
+  if (img) {
+    img.style.transition = 'opacity 0.18s';
+    img.style.opacity = '0';
+    setTimeout(() => { img.src = p.photos[newIdx]; img.onload = () => { img.style.opacity = '1'; }; }, 130);
+  }
+  card.querySelectorAll('.card-dot').forEach((d, i) => d.classList.toggle('active', i === newIdx));
+}
+
+function showMatchAnimation() {
+  const burst = document.getElementById('matchBurst');
+  burst.innerHTML = '';
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight * 0.42;
+  const emojis = ['❤️','💕','💖','💗','💓'];
+  for (let i = 0; i < 16; i++) {
+    const h = document.createElement('div');
+    h.className = 'match-heart';
+    h.textContent = emojis[i % emojis.length];
+    const angle = (i / 16) * 2 * Math.PI + Math.random() * 0.4;
+    const dist = 100 + Math.random() * 130;
+    const tx = Math.round(Math.cos(angle) * dist);
+    const ty = Math.round(Math.sin(angle) * dist - 50);
+    h.style.cssText = `left:${cx}px;top:${cy}px;font-size:${1.1+Math.random()*1.2}rem;--tx:${tx}px;--ty:${ty}px;animation-delay:${(Math.random()*0.15).toFixed(2)}s`;
+    burst.appendChild(h);
+  }
+  setTimeout(() => { burst.innerHTML = ''; }, 1300);
+}
+
+function buildCard(p, depthClass) {
+  const card = document.createElement('div');
+  card.className = `swipe-card card-depth-${depthClass}`;
+
+  if (p.type === 'pub') {
+    card.innerHTML = `
+      <div class="card-pub-inner">
+        <div class="pub-icon">💰</div>
+        <div class="pub-label">Info importante</div>
+        <div class="pub-texte">${p.desc || 'FRAIS de mise en contact : 3000 FCFA'}</div>
+        <div class="pub-num">📞 +226 67868282</div>
+        ${p.pubLien ? `<a href="${p.pubLien}" target="_blank" class="pub-cta" onclick="event.stopPropagation()">Contacter maintenant</a>` : ''}
+      </div>
+      <div class="stamp stamp-oui">❤️ OUI</div>
+      <div class="stamp stamp-non">✕ NON</div>`;
+  } else {
+    card.dataset.photoIdx = '0';
+    let inner = '';
+    if (p.photos && p.photos.length > 0) {
+      inner += `<img src="${p.photos[0]}" class="card-photo" alt="${p.nom}" draggable="false">`;
+      if (p.photos.length > 1) {
+        inner += `<div class="card-dots">${p.photos.map((_,i)=>`<div class="card-dot${i===0?' active':''}"></div>`).join('')}</div>`;
+      }
+    } else {
+      inner += `<div class="card-placeholder"><div>${emoji(p.type)}</div>${p.type !== 'personne' ? `<div class="type-name">${p.nom}</div>` : ''}</div>`;
+    }
+    inner += `<div class="card-overlay"></div>`;
+    inner += `<span class="card-type-badge badge-${p.type}">${emoji(p.type)} ${p.type}</span>`;
+    if (p.isNew) inner += `<span class="badge-new">✨ NOUVEAU</span>`;
+    inner += `
+      <div class="stamp stamp-oui">❤️ OUI</div>
+      <div class="stamp stamp-non">✕ NON</div>
+      <div class="card-info">
+        <div class="card-name">${p.nom}</div>
+        <div class="card-location">📍 ${p.quartier ? p.quartier + ', ' : ''}${p.ville}</div>
+        ${p.desc ? `<div class="card-desc">${p.desc}</div>` : ''}
+        <div class="card-price">${p.prix}</div>
+      </div>`;
+    card.innerHTML = inner;
+  }
+
+  if (depthClass === 0) addDragEvents(card, p);
+  return card;
+}
+
+function renderStack() {
+  stack.querySelectorAll('.swipe-card').forEach(c => c.remove());
+  const remaining = profiles.length - current;
+
+  if (remaining <= 0) { showEmpty(); return; }
+
+  counter.textContent = `${current + 1} / ${profiles.length}`;
+
+  const count = Math.min(3, remaining);
+  for (let i = count - 1; i >= 0; i--) {
+    const card = buildCard(profiles[current + i], i);
+    stack.appendChild(card);
+  }
+}
+
+function showEmpty() {
+  counter.textContent = '';
+  stack.innerHTML = `
+    <div class="empty-state">
+      <div class="empty-emoji">🎉</div>
+      <h2>Tu as tout vu !</h2>
+      <p>Tu as parcouru tous les profils disponibles.<br>Reviens bientôt pour en découvrir de nouveaux !</p>
+      <a href="/" class="btn-reset">Recommencer</a>
+    </div>`;
+}
+
+function addDragEvents(card, p) {
+  const onStart = (x) => {
+    if (animating) return;
+    isDragging = true;
+    startX = x;
+    currentX = 0;
+    activeCard = card;
+    card.style.transition = 'none';
+  };
+
+  const onMove = (x) => {
+    if (!isDragging || activeCard !== card) return;
+    currentX = x - startX;
+    const rot = currentX * 0.1;
+    card.style.transform = `translateX(${currentX}px) rotate(${rot}deg)`;
+    const ratio = Math.min(Math.abs(currentX) / 90, 1);
+    card.querySelector('.stamp-oui').style.opacity = currentX > 0 ? ratio : 0;
+    card.querySelector('.stamp-non').style.opacity = currentX < 0 ? ratio : 0;
+  };
+
+  const onEnd = () => {
+    if (!isDragging || activeCard !== card) return;
+    isDragging = false;
+    activeCard = null;
+    card.querySelector('.stamp-oui').style.opacity = 0;
+    card.querySelector('.stamp-non').style.opacity = 0;
+    if (Math.abs(currentX) < 15) {
+      if (p.photos && p.photos.length > 1) {
+        const rect = card.getBoundingClientRect();
+        navigatePhoto(card, p, startX > rect.left + rect.width / 2 ? 1 : -1);
+      }
+      card.style.transform = '';
+      return;
+    }
+    if (Math.abs(currentX) > 80) {
+      fly(currentX > 0 ? 'right' : 'left', card, p);
+    } else {
+      card.style.transition = 'transform 0.45s cubic-bezier(.22,.68,0,1.2)';
+      card.style.transform = '';
+    }
+  };
+
+  card.addEventListener('touchstart', e => onStart(e.touches[0].clientX), { passive: true });
+  card.addEventListener('touchmove',  e => { e.preventDefault(); onMove(e.touches[0].clientX); }, { passive: false });
+  card.addEventListener('touchend',   onEnd);
+  card.addEventListener('mousedown',  e => onStart(e.clientX));
+  window.addEventListener('mousemove', e => { if (isDragging && activeCard === card) onMove(e.clientX); });
+  window.addEventListener('mouseup',   onEnd);
+}
+
+function fly(direction, card, p, auto = false) {
+  animating = true;
+  const duration = auto ? 0.8 : 0.42;
+  const rotate   = auto ? 8   : 28;
+  card.style.transition = `transform ${duration}s cubic-bezier(.4,0,.2,1), opacity ${duration}s ease`;
+  if (direction === 'right') {
+    card.style.transform = `translateX(160%) rotate(${rotate}deg)`;
+    card.querySelector('.stamp-oui').style.opacity = 1;
+    showMatchAnimation();
+    setTimeout(() => showModal(p), duration * 400);
+  } else {
+    card.style.transform = `translateX(-160%) rotate(-${rotate}deg)`;
+    if (!auto) card.querySelector('.stamp-non').style.opacity = 1;
+    if (p && p.id) fetch(`/vue/${p.id}`, { method: 'POST' }).catch(() => {});
+  }
+  card.style.opacity = '0';
+  setTimeout(() => {
+    current++;
+    animating = false;
+    renderStack();
+  }, duration * 1000);
+}
+
+function swipeRight() {
+  if (animating || current >= profiles.length) return;
+  const card = stack.querySelector('.card-depth-0');
+  if (card) fly('right', card, profiles[current]);
+}
+
+function swipeLeft() {
+  if (animating || current >= profiles.length) return;
+  const card = stack.querySelector('.card-depth-0');
+  if (card) fly('left', card, profiles[current]);
+}
+
+function showModal(p) {
+  currentProfil = p;
+  stopPoll();
+  resetZoneAPI();
+  document.getElementById('modalNom').textContent = p.nom;
+  const loc = `📍 ${p.quartier ? p.quartier + ', ' : ''}${p.ville}`;
+  document.getElementById('modalLoc').textContent = loc;
+  document.getElementById('modalPrix').textContent = p.prix;
+
+  // Basculer entre mode API et mode USSD
+  const omActive = {{ 'true' if om_active else 'false' }};
+  document.getElementById('zoneAPI').style.display  = omActive ? 'block' : 'none';
+  document.getElementById('zoneUSSD').style.display = omActive ? 'none'  : 'block';
+
+  const descEl = document.getElementById('modalDesc');
+  if (p.desc) { descEl.textContent = p.desc; descEl.style.display = 'block'; }
+  else { descEl.style.display = 'none'; }
+
+  const imgZone = document.getElementById('modalImgZone');
+  if (p.photos && p.photos.length > 0) {
+    imgZone.innerHTML = `<img src="${p.photos[0]}" class="modal-img" alt="${p.nom}">`;
+  } else {
+    imgZone.innerHTML = `<div class="modal-img-placeholder">${emoji(p.type)}</div>`;
+  }
+
+  const waNum = p.wa || WA_DEFAULT;
+  const locTxt = `${p.quartier ? p.quartier + ', ' : ''}${p.ville}`;
+  const localNum = (WA_DEFAULT || '').replace(/^\+?226/, '');
+  const montant = p.prix_raw || 0;
+  document.getElementById('btnOM').href   = `tel:*144*2*1*${localNum}*${montant}%23`;
+  document.getElementById('btnMoov').href = `tel:*555*2*1*${localNum}*${montant}%23`;
+  const msg = encodeURIComponent(
+    `Bonjour ! J'ai payé *${p.prix}* via Orange/Moov Money pour contacter : *${p.nom}*\n📍 ${locTxt}\nMerci de m'envoyer le contact 🙏`
+  );
+  document.getElementById('btnWhatsapp').href = `https://wa.me/${waNum}?text=${msg}`;
+
+  if (p.id) fetch(`/vue/${p.id}`, { method: 'POST' }).catch(() => {});
+
+  document.getElementById('modalContact').classList.add('open');
+}
+
+function fermerModal() {
+  document.getElementById('modalContact').classList.remove('open');
+  stopPoll();
+}
+
+// ── Paiement API (Orange Money) ───────────────────────────
+let pollInterval = null;
+let currentProfil = null;
+
+function stopPoll() {
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+}
+
+function resetZoneAPI() {
+  document.getElementById('zoneAttente').style.display = 'none';
+  document.getElementById('zoneContact').style.display = 'none';
+  document.getElementById('zoneEchec').style.display   = 'none';
+  document.getElementById('inputNumero').value = '';
+  document.getElementById('inputNumero').style.display = '';
+  document.getElementById('btnPayerAPI').style.display = '';
+  stopPoll();
+}
+
+async function lancerPaiementAPI() {
+  const numero = document.getElementById('inputNumero').value.trim();
+  if (!numero || numero.length < 8) {
+    document.getElementById('inputNumero').style.borderColor = 'var(--rouge)';
+    return;
+  }
+  const p = currentProfil;
+  document.getElementById('inputNumero').style.display = 'none';
+  document.getElementById('btnPayerAPI').style.display = 'none';
+  document.getElementById('zoneAttente').style.display = 'block';
+
+  try {
+    const res  = await fetch('/paiement/initier', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({profil_id: p.id, numero}),
+    });
+    const data = await res.json();
+    if (data.error) { afficherEchecPaiement(); return; }
+
+    const token = data.token;
+    pollInterval = setInterval(async () => {
+      try {
+        const r = await fetch(`/paiement/statut/${token}`);
+        const d = await r.json();
+        if (d.statut === 'confirme') {
+          stopPoll();
+          document.getElementById('zoneAttente').style.display  = 'none';
+          document.getElementById('zoneContact').style.display  = 'block';
+          document.getElementById('btnContactDirect').href = d.whatsapp;
+        } else if (d.statut === 'echec' || d.statut === 'expire') {
+          stopPoll();
+          afficherEchecPaiement();
+        }
+      } catch (_) {}
+    }, 3000);
+  } catch (_) { afficherEchecPaiement(); }
+}
+
+function afficherEchecPaiement() {
+  document.getElementById('zoneAttente').style.display = 'none';
+  document.getElementById('zoneEchec').style.display   = 'block';
+}
+function ouvrirFiltres() { document.getElementById('filterOverlay').classList.add('open'); }
+function fermerFiltres() { document.getElementById('filterOverlay').classList.remove('open'); }
+
+document.getElementById('modalContact').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalContact')) fermerModal();
+});
+
+document.addEventListener('keydown', e => {
+  if (document.getElementById('modalContact').classList.contains('open')) {
+    if (e.key === 'Escape') fermerModal();
+    return;
+  }
+  if (document.getElementById('filterOverlay').classList.contains('open')) {
+    if (e.key === 'Escape') fermerFiltres();
+    return;
+  }
+  if (e.key === 'ArrowRight' || e.key === 'l') swipeRight();
+  if (e.key === 'ArrowLeft'  || e.key === 'h') swipeLeft();
+});
+
+renderStack();
+
+// ── DÉFILEMENT AUTOMATIQUE ─────────────────────────────────
+const AUTO_DELAY = 6000; // 6 secondes entre chaque carte
+let autoTimer = null;
+
+function resetAutoTimer() {
+  clearTimeout(autoTimer);
+  autoTimer = setTimeout(() => {
+    const modalOuvert  = document.getElementById('modalContact').classList.contains('open');
+    const filtresOuvert = document.getElementById('filterOverlay').classList.contains('open');
+    if (!modalOuvert && !filtresOuvert && !animating && current < profiles.length) {
+      const card = document.querySelector('.card-depth-0');
+      if (card) fly('left', card, profiles[current], true);
+    }
+    resetAutoTimer();
+  }, AUTO_DELAY);
+}
+
+// Pause quand l'utilisateur interagit
+document.addEventListener('touchstart', resetAutoTimer, { passive: true });
+document.addEventListener('mousedown',  resetAutoTimer);
+
+resetAutoTimer();
+
+// ── PWA INSTALL ───────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+}
+
+let deferredPrompt = null;
+const btnInstall = document.getElementById('btnInstall');
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  btnInstall.classList.add('visible');
+});
+
+function installerApp() {
+  if (deferredPrompt) {
+    // Android / Desktop : prompt natif
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      deferredPrompt = null;
+      btnInstall.classList.remove('visible');
+    });
+  } else {
+    // iOS : ouvrir le modal d'instructions
+    document.getElementById('iosModal').classList.add('open');
+  }
+}
+
+function fermerIos() {
+  document.getElementById('iosModal').classList.remove('open');
+}
+
+window.addEventListener('appinstalled', () => {
+  btnInstall.classList.remove('visible');
+});
+
+// iOS : montrer le bouton si pas en standalone
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+if (isIOS && !window.navigator.standalone) {
+  btnInstall.classList.add('visible');
+}
+</script>
+</body>
+</html>
