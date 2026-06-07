@@ -289,6 +289,10 @@ header {
 .btn-pass { border-color: var(--rouge); color: var(--rouge); }
 .btn-pass:active { background: var(--rouge); color: #fff; transform: scale(0.92); }
 
+.btn-rewind { border-color: var(--or); color: var(--or); width: 48px; height: 48px; font-size: 1.3rem; }
+.btn-rewind:active { background: var(--or); color: #fff; transform: scale(0.92); }
+.btn-rewind:disabled { border-color: rgba(255,255,255,.15); color: rgba(255,255,255,.15); cursor: default; }
+
 .btn-like { border-color: var(--vert); color: var(--vert); }
 .btn-like:active { background: var(--vert); color: #fff; transform: scale(0.92); }
 
@@ -716,6 +720,7 @@ header {
 
   <div class="actions">
     <button class="btn-action btn-pass" onclick="swipeLeft()" aria-label="Passer">✕</button>
+    <button class="btn-action btn-rewind" id="btnRewind" onclick="rewind()" aria-label="Retour" disabled>↩</button>
     <div class="card-counter" id="cardCounter"></div>
     <button class="btn-action btn-like" onclick="swipeRight()" aria-label="Contacter">❤️</button>
   </div>
@@ -978,11 +983,21 @@ function renderStack() {
 
   counter.textContent = `${current + 1} / ${profiles.length}`;
 
+  const btnRewind = document.getElementById('btnRewind');
+  if (btnRewind) btnRewind.disabled = current <= 0;
+
   const count = Math.min(3, remaining);
   for (let i = count - 1; i >= 0; i--) {
     const card = buildCard(profiles[current + i], i);
     stack.appendChild(card);
   }
+}
+
+function rewind() {
+  if (animating || current <= 0) return;
+  current--;
+  renderStack();
+  resetAutoTimer();
 }
 
 function showEmpty() {
@@ -1038,12 +1053,26 @@ function addDragEvents(card, p) {
     }
   };
 
-  card.addEventListener('touchstart', e => onStart(e.touches[0].clientX), { passive: true });
+  const onCancel = () => {
+    if (!isDragging || activeCard !== card) return;
+    isDragging = false;
+    activeCard = null;
+    card.style.transition = 'transform 0.35s ease';
+    card.style.transform  = '';
+    const so = card.querySelector('.stamp-oui');
+    const sn = card.querySelector('.stamp-non');
+    if (so) so.style.opacity = 0;
+    if (sn) sn.style.opacity = 0;
+  };
+
+  let lastTouch = 0;
+  card.addEventListener('touchstart', e => { lastTouch = Date.now(); onStart(e.touches[0].clientX); }, { passive: true });
   card.addEventListener('touchmove',  e => { e.preventDefault(); onMove(e.touches[0].clientX); }, { passive: false });
   card.addEventListener('touchend',   onEnd);
-  card.addEventListener('mousedown',  e => onStart(e.clientX));
+  card.addEventListener('touchcancel', onCancel);
+  card.addEventListener('mousedown',  e => { if (Date.now() - lastTouch < 600) return; onStart(e.clientX); });
   window.addEventListener('mousemove', e => { if (isDragging && activeCard === card) onMove(e.clientX); });
-  window.addEventListener('mouseup',   onEnd);
+  window.addEventListener('mouseup',   e => { if (Date.now() - lastTouch < 600) return; onEnd(); });
 }
 
 function fly(direction, card, p, auto = false) {
