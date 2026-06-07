@@ -37,6 +37,8 @@ html, body {
   color: var(--texte);
   -webkit-user-select: none;
   user-select: none;
+  overscroll-behavior: none;
+  touch-action: none;
 }
 
 /* HEADER */
@@ -1009,7 +1011,7 @@ function addDragEvents(card, p) {
     currentX = x - startX;
     const rot = currentX * 0.1;
     card.style.transform = `translateX(${currentX}px) rotate(${rot}deg)`;
-    const ratio = Math.min(Math.abs(currentX) / 90, 1);
+    const ratio = Math.min(Math.abs(currentX) / 60, 1);
     card.querySelector('.stamp-oui').style.opacity = currentX > 0 ? ratio : 0;
     card.querySelector('.stamp-non').style.opacity = currentX < 0 ? ratio : 0;
   };
@@ -1028,7 +1030,7 @@ function addDragEvents(card, p) {
       card.style.transform = '';
       return;
     }
-    if (Math.abs(currentX) > 80) {
+    if (Math.abs(currentX) > 60) {
       fly(currentX > 0 ? 'right' : 'left', card, p);
     } else {
       card.style.transition = 'transform 0.45s cubic-bezier(.22,.68,0,1.2)';
