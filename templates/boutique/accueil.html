@@ -897,17 +897,45 @@ function emoji(type) {
 }
 
 function navigatePhoto(card, p, direction) {
-  const idx = parseInt(card.dataset.photoIdx || '0');
+  if (card.dataset.navigating === '1') return;
+  const idx    = parseInt(card.dataset.photoIdx || '0');
   const newIdx = Math.max(0, Math.min(p.photos.length - 1, idx + direction));
   if (newIdx === idx) return;
-  card.dataset.photoIdx = newIdx;
-  const img = card.querySelector('.card-photo');
-  if (img) {
-    img.style.transition = 'opacity 0.18s';
-    img.style.opacity = '0';
-    setTimeout(() => { img.src = p.photos[newIdx]; img.onload = () => { img.style.opacity = '1'; }; }, 130);
-  }
+
+  card.dataset.navigating = '1';
+  card.dataset.photoIdx   = newIdx;
   card.querySelectorAll('.card-dot').forEach((d, i) => d.classList.toggle('active', i === newIdx));
+
+  const oldImg = card.querySelector('.card-photo');
+  if (!oldImg) { card.dataset.navigating = '0'; return; }
+
+  const newImg  = document.createElement('img');
+  newImg.className   = 'card-photo';
+  newImg.alt         = p.nom;
+  newImg.draggable   = false;
+  newImg.src         = p.photos[newIdx];
+
+  const inX  = direction > 0 ? '100%' : '-100%';
+  const outX = direction > 0 ? '-100%' : '100%';
+  const abs  = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;pointer-events:none;';
+
+  oldImg.style.cssText = abs;
+  newImg.style.cssText = abs + `transform:translateX(${inX});z-index:1;`;
+  oldImg.after(newImg);
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const tr = 'transform 0.28s cubic-bezier(.4,0,.2,1)';
+    newImg.style.transition = tr;
+    newImg.style.transform  = 'translateX(0)';
+    oldImg.style.transition = tr;
+    oldImg.style.transform  = `translateX(${outX})`;
+  }));
+
+  setTimeout(() => {
+    oldImg.remove();
+    newImg.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;';
+    card.dataset.navigating = '0';
+  }, 300);
 }
 
 function showMatchAnimation() {
