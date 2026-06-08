@@ -701,6 +701,7 @@ header {
     {% if type_filtre != 'tous' or recherche %}<span style="display:inline-block;width:7px;height:7px;background:var(--or);border-radius:50%;margin-left:2px;vertical-align:middle;"></span>{% endif %}
   </button>
   <button class="btn-install" id="btnInstall" onclick="installerApp()">📲 Installer</button>
+  <button class="btn-bell" id="btnBell" onclick="togglePush()" title="Notifications" style="display:none;background:rgba(232,160,32,0.12);border:1.5px solid rgba(232,160,32,0.4);border-radius:10px;padding:7px 10px;font-size:1.1rem;cursor:pointer;transition:background 0.2s;" aria-label="Activer notifications">🔔</button>
   </div>
 </header>
 
@@ -1343,6 +1344,44 @@ const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 if (isIOS && !window.navigator.standalone) {
   btnInstall.classList.add('visible');
 }
+
+// ── Push Notifications ──────────────────────────────────────
+const VAPID_PUB = '{{ vapid_public_key }}';
+const btnBell   = document.getElementById('btnBell');
+
+function urlB64ToUint8(b) {
+  const p = b.replace(/-/g,'+').replace(/_/g,'/');
+  const r = atob(p.padEnd(p.length + (4 - p.length % 4) % 4, '='));
+  return Uint8Array.from([...r].map(c => c.charCodeAt(0)));
+}
+
+async function initPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !VAPID_PUB) return;
+  btnBell.style.display = 'flex';
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  btnBell.textContent = sub ? '🔕' : '🔔';
+}
+
+async function togglePush() {
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (sub) {
+    await sub.unsubscribe();
+    await fetch('/push/unsubscribe', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({endpoint: sub.endpoint}) });
+    btnBell.textContent = '🔔';
+  } else {
+    try {
+      const newSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(VAPID_PUB) });
+      await fetch('/push/subscribe', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(newSub) });
+      btnBell.textContent = '🔕';
+    } catch(err) {
+      console.warn('Push refusé', err);
+    }
+  }
+}
+
+navigator.serviceWorker.ready.then(() => initPush());
 </script>
 </body>
 </html>

@@ -1,4 +1,6 @@
 import os
+import json
+import base64
 import secrets
 import hmac
 import hashlib
@@ -12,6 +14,11 @@ from werkzeug.security import check_password_hash
 from dotenv import load_dotenv
 import cloudinary
 import cloudinary.uploader
+try:
+    from pywebpush import webpush, WebPushException
+    PUSH_AVAILABLE = True
+except ImportError:
+    PUSH_AVAILABLE = False
 
 load_dotenv()
 
@@ -33,6 +40,11 @@ ADMIN_PASSWORD   = os.environ.get('ADMIN_PASSWORD', 'admin123')
 PUB_TEXTE        = os.environ.get('PUB_TEXTE', '')
 PUB_LIEN         = os.environ.get('PUB_LIEN', '')
 PUB_IMAGE        = os.environ.get('PUB_IMAGE', '')
+
+# ── Notifications Push (VAPID) ───────────────────────────────────────
+VAPID_PUBLIC_KEY  = os.environ.get('VAPID_PUBLIC_KEY',  'BGp_wwcePpaMx_7yeLZeq6hwRxPofThFDxCqtQgUu3ifzWsImit-BBR59vvry8pl6-2j0pcXM43PjKktPEQfrCs')
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', 'LS0tLS1CRUdJTiBFQyBQUklWQVRFIEtFWS0tLS0tCk1IY0NBUUVFSUFPWWZ1YzYrR0JKa0FtVER4elBleVF6Q2h4bzBEaXlLajh4aDJmOXhzY1BvQW9HQ0NxR1NNNDkKQXdFSG9VUURRZ0FFYW4vREJ4NCtsb3pIL3ZKNHRsNnJxSEJIRStoOU9FVVBFS3ExQ0JTN2VKL05hd2lhSzM0RQpGSG4yKyt2THltWHI3YVBTbHhjempjK01xUzA4UkIrc0t3PT0KLS0tLS1FTkQgRUMgUFJJVkFURSBLRVktLS0tLQo')
+VAPID_EMAIL       = os.environ.get('VAPID_EMAIL',       'mailto:admin@nongafo.com')
 
 # ── Orange Money API (activer en ajoutant ces variables dans Vercel) ──
 OM_CLIENT_ID      = os.environ.get('OM_CLIENT_ID', '')
@@ -83,6 +95,15 @@ class Produit(db.Model):
         if self.cree_le:
             return datetime.utcnow() - self.cree_le < timedelta(days=7)
         return False
+
+
+class PushSubscription(db.Model):
+    __tablename__ = 'push_subscriptions'
+    id       = db.Column(db.Integer, primary_key=True)
+    endpoint = db.Column(db.Text, unique=True, nullable=False)
+    p256dh   = db.Column(db.Text, nullable=False)
+    auth     = db.Column(db.String(100), nullable=False)
+    cree_le  = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class TentativeLogin(db.Model):
@@ -173,7 +194,8 @@ def accueil():
                            recherche=recherche,
                            whatsapp_number=WHATSAPP_NUMBER,
                            pub=pub,
-                           om_active=OM_ACTIVE)
+                           om_active=OM_ACTIVE,
+                           vapid_public_key=VAPID_PUBLIC_KEY if PUSH_AVAILABLE else '')
 
 @app.route('/produit/<int:pk>')
 def detail_produit(pk):
@@ -202,6 +224,66 @@ def incrementer_vue(pk):
     produit.vues = (produit.vues or 0) + 1
     db.session.commit()
     return jsonify({'vues': produit.vues})
+
+
+# ── Routes Notifications Push ────────────────────────────
+
+def send_push(sub, titre, corps):
+    pem = base64.urlsafe_b64decode(VAPID_PRIVATE_KEY + '==').decode()
+    webpush(
+        subscription_info={'endpoint': sub.endpoint,
+                           'keys': {'p256dh': sub.p256dh, 'auth': sub.auth}},
+        data=json.dumps({'titre': titre, 'corps': corps, 'url': '/'}),
+        vapid_private_key=pem,
+        vapid_claims={'sub': VAPID_EMAIL},
+    )
+
+@app.route('/push/subscribe', methods=['POST'])
+def push_subscribe():
+    data     = request.get_json(silent=True) or {}
+    endpoint = data.get('endpoint')
+    keys     = data.get('keys', {})
+    p256dh   = keys.get('p256dh')
+    auth     = keys.get('auth')
+    if not all([endpoint, p256dh, auth]):
+        return jsonify({'error': 'Données manquantes'}), 400
+    if not PushSubscription.query.filter_by(endpoint=endpoint).first():
+        db.session.add(PushSubscription(endpoint=endpoint, p256dh=p256dh, auth=auth))
+        db.session.commit()
+    return jsonify({'ok': True})
+
+@app.route('/push/unsubscribe', methods=['POST'])
+def push_unsubscribe():
+    data = request.get_json(silent=True) or {}
+    PushSubscription.query.filter_by(endpoint=data.get('endpoint', '')).delete()
+    db.session.commit()
+    return jsonify({'ok': True})
+
+@app.route('/admin/push/envoyer', methods=['POST'])
+@admin_required
+def admin_push_envoyer():
+    if not PUSH_AVAILABLE:
+        flash('info|pywebpush non disponible')
+        return redirect(url_for('admin_dashboard'))
+    titre = request.form.get('titre', 'Nongafo').strip() or 'Nongafo'
+    corps = request.form.get('corps', '').strip()
+    if not corps:
+        flash('info|Message requis')
+        return redirect(url_for('admin_dashboard'))
+    subs    = PushSubscription.query.all()
+    envoyes = 0
+    for sub in subs:
+        try:
+            send_push(sub, titre, corps)
+            envoyes += 1
+        except WebPushException as e:
+            if e.response and e.response.status_code in (404, 410):
+                db.session.delete(sub)
+        except Exception:
+            pass
+    db.session.commit()
+    flash(f'success|Notification envoyée à {envoyes} abonné(s)')
+    return redirect(url_for('admin_dashboard'))
 
 
 # ── Routes Paiement Orange Money ─────────────────────────
@@ -442,6 +524,19 @@ def migrate_db():
                         om_ref       VARCHAR(100),
                         cree_le      TIMESTAMP DEFAULT NOW(),
                         confirme_le  TIMESTAMP
+                    )
+                '''))
+                conn.commit()
+            except Exception:
+                pass
+            try:
+                conn.execute(text('''
+                    CREATE TABLE IF NOT EXISTS push_subscriptions (
+                        id        SERIAL PRIMARY KEY,
+                        endpoint  TEXT NOT NULL UNIQUE,
+                        p256dh    TEXT NOT NULL,
+                        auth      TEXT NOT NULL,
+                        cree_le   TIMESTAMP DEFAULT NOW()
                     )
                 '''))
                 conn.commit()

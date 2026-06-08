@@ -207,6 +207,18 @@
   {% endfor %}
 </div>
 
+<!-- SECTION NOTIFICATIONS PUSH -->
+<div style="margin-top:28px;background:#161616;border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:20px;">
+  <div style="font-weight:600;font-size:1rem;margin-bottom:14px;color:#E8A020;">🔔 Envoyer une notification push</div>
+  <form method="post" action="/admin/push/envoyer" style="display:flex;flex-direction:column;gap:10px;">
+    <input type="text" name="titre" placeholder="Titre (ex: Nouveau profil 🔥)" value="Nongafo"
+           style="background:#0D0D0D;border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:10px 14px;color:#F5EFE6;font-size:.9rem;outline:none;">
+    <textarea name="corps" rows="2" placeholder="Message à envoyer à tous les abonnés…" required
+              style="background:#0D0D0D;border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:10px 14px;color:#F5EFE6;font-size:.9rem;outline:none;resize:vertical;"></textarea>
+    <button type="submit" style="background:#E8A020;border:none;border-radius:10px;padding:11px 20px;color:#0D0D0D;font-weight:700;font-size:.9rem;cursor:pointer;align-self:flex-start;">Envoyer</button>
+  </form>
+</div>
+
 <script>
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
