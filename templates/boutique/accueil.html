@@ -1024,49 +1024,20 @@ function addDragEvents(card, p) {
   const onMove = (x) => {
     if (!isDragging || activeCard !== card) return;
     currentX = x - startX;
-    const rot = currentX * 0.1;
-    card.style.transform = `translateX(${currentX}px) rotate(${rot}deg)`;
-    const ratio = Math.min(Math.max(Math.abs(currentX) - 50, 0) / 40, 1);
-    card.querySelector('.stamp-oui').style.opacity = currentX > 0 ? ratio : 0;
-    card.querySelector('.stamp-non').style.opacity = currentX < 0 ? ratio : 0;
+    card.style.transform = `translateX(${currentX * 0.18}px)`;
   };
 
   const onEnd = () => {
     if (!isDragging || activeCard !== card) return;
     isDragging = false;
     activeCard = null;
-    const so = card.querySelector('.stamp-oui');
-    const sn = card.querySelector('.stamp-non');
-    if (so) so.style.opacity = 0;
-    if (sn) sn.style.opacity = 0;
-
-    const absX = Math.abs(currentX);
-    const multiPhoto = p.photos && p.photos.length > 1;
-
-    // Tap (< 15px) → navigation photo côté touché
-    if (absX < 15) {
-      if (multiPhoto) {
-        const rect = card.getBoundingClientRect();
-        navigatePhoto(card, p, startX > rect.left + rect.width / 2 ? 1 : -1);
-      }
-      card.style.transform = '';
-      return;
-    }
-
-    // Swipe court (15–70px) → navigation photo dans la direction du swipe
-    if (absX < 70 && multiPhoto) {
-      navigatePhoto(card, p, currentX < 0 ? -1 : 1);
-      card.style.transition = 'transform 0.3s ease';
-      card.style.transform  = '';
-      return;
-    }
-
-    // Swipe long (≥ 70px) → voler la carte (passer / like)
-    if (absX >= 70) {
-      fly(currentX > 0 ? 'right' : 'left', card, p);
+    card.style.transition = 'transform 0.25s ease';
+    card.style.transform  = '';
+    if (Math.abs(currentX) < 10) {
+      const rect = card.getBoundingClientRect();
+      navigatePhoto(card, p, startX > rect.left + rect.width / 2 ? 1 : -1);
     } else {
-      card.style.transition = 'transform 0.45s cubic-bezier(.22,.68,0,1.2)';
-      card.style.transform  = '';
+      navigatePhoto(card, p, currentX < 0 ? -1 : 1);
     }
   };
 
