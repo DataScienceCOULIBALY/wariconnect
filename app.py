@@ -195,7 +195,7 @@ def accueil():
                            whatsapp_number=WHATSAPP_NUMBER,
                            pub=pub,
                            om_active=OM_ACTIVE,
-                           vapid_public_key=VAPID_PUBLIC_KEY if PUSH_AVAILABLE else '')
+                           vapid_public_key=VAPID_PUBLIC_KEY)
 
 @app.route('/produit/<int:pk>')
 def detail_produit(pk):

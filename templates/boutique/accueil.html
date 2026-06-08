@@ -1355,6 +1355,17 @@ function urlB64ToUint8(b) {
   return Uint8Array.from([...r].map(c => c.charCodeAt(0)));
 }
 
+function toastPush(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  Object.assign(t.style, {position:'fixed',bottom:'90px',left:'50%',transform:'translateX(-50%)',
+    background:'rgba(30,30,30,0.95)',color:'#F5EFE6',padding:'10px 20px',borderRadius:'12px',
+    fontSize:'.88rem',zIndex:'9999',pointerEvents:'none',whiteSpace:'nowrap',
+    border:'1px solid rgba(232,160,32,0.3)'});
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
 async function initPush() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
   const reg = await navigator.serviceWorker.ready;
@@ -1363,24 +1374,34 @@ async function initPush() {
 }
 
 async function togglePush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    toastPush('Notifications non supportées sur ce navigateur');
+    return;
+  }
   const reg = await navigator.serviceWorker.ready;
   const sub = await reg.pushManager.getSubscription();
   if (sub) {
     await sub.unsubscribe();
-    await fetch('/push/unsubscribe', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({endpoint: sub.endpoint}) });
+    await fetch('/push/unsubscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({endpoint:sub.endpoint}) });
     btnBell.textContent = '🔔';
+    toastPush('Notifications désactivées');
   } else {
+    if (Notification.permission === 'denied') {
+      toastPush('Notifications bloquées — autorise-les dans les paramètres du navigateur');
+      return;
+    }
     try {
-      const newSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(VAPID_PUB) });
-      await fetch('/push/subscribe', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(newSub) });
+      const newSub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:urlB64ToUint8(VAPID_PUB) });
+      await fetch('/push/subscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(newSub) });
       btnBell.textContent = '🔕';
+      toastPush('Notifications activées !');
     } catch(err) {
-      console.warn('Push refusé', err);
+      toastPush('Permission refusée ou erreur : ' + err.message);
     }
   }
 }
 
-navigator.serviceWorker.ready.then(() => initPush());
+if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(() => initPush());
 </script>
 </body>
 </html>
